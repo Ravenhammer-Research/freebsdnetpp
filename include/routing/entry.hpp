@@ -24,6 +24,7 @@ namespace libfreebsdnet::routing {
     std::string destination;
     std::string gateway;
     std::string interface;
+    std::string netmask;
     uint16_t flags;
     uint32_t metric;
     uint32_t mtu;
@@ -79,6 +80,12 @@ namespace libfreebsdnet::routing {
      * @return Route MTU
      */
     uint32_t getMtu() const;
+
+    /**
+     * @brief Get route netmask
+     * @return Route netmask in CIDR notation
+     */
+    std::string getNetmask() const;
 
     /**
      * @brief Check if route is active

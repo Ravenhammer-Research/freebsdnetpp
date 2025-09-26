@@ -105,6 +105,19 @@ namespace libfreebsdnet::interface {
      */
     bool setPmtuDiscovery(bool enabled);
 
+    /**
+     * @brief Get tunnel FIB
+     * @return Tunnel FIB or -1 on error
+     */
+    int getTunnelFib() const;
+
+    /**
+     * @brief Set tunnel FIB
+     * @param fib FIB number
+     * @return true on success, false on error
+     */
+    bool setTunnelFib(int fib);
+
     // Base class method overrides
     int getMedia() const override;
     bool setMedia(int media) override;
@@ -125,6 +138,7 @@ namespace libfreebsdnet::interface {
 
     // VNET interface methods
     int getVnet() const override;
+    std::string getVnetJailName() const override;
     bool setVnet(int vnetId) override;
     bool reclaimFromVnet() override;
 
@@ -133,9 +147,6 @@ namespace libfreebsdnet::interface {
     bool addToGroup(const std::string &groupName) override;
     bool removeFromGroup(const std::string &groupName) override;
 
-  private:
-    class Impl;
-    std::unique_ptr<Impl> pImpl;
   };
 
 } // namespace libfreebsdnet::interface

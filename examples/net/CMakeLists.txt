@@ -17,6 +17,8 @@ set(NET_SOURCES
     src/interface_show_commands.cpp
     src/interface_show_bridge_commands.cpp
     src/interface_show_lagg_commands.cpp
+    src/interface_show_gif_commands.cpp
+    src/interface_show_ethernet_commands.cpp
     src/interface_set_commands.cpp
     src/interface_delete_commands.cpp
     src/route_commands.cpp
@@ -42,6 +44,7 @@ target_link_libraries(net
     PRIVATE
         libfreebsdnet++
         ${READLINE_LIBRARIES}
+        jail
 )
 
 # Link directories

@@ -50,7 +50,7 @@ namespace libfreebsdnet::interface {
   std::string PfsyncInterface::getName() const { return Interface::getName(); }
   unsigned int PfsyncInterface::getIndex() const { return Interface::getIndex(); }
   InterfaceType PfsyncInterface::getType() const { return InterfaceType::PFSYNC; }
-  int PfsyncInterface::getFlags() const { return Interface::getFlags(); }
+  std::vector<Flag> PfsyncInterface::getFlags() const { return Interface::getFlags(); }
   bool PfsyncInterface::setFlags(int flags) { return Interface::setFlags(flags); }
   bool PfsyncInterface::bringUp() { return Interface::bringUp(); }
   bool PfsyncInterface::bringDown() { return Interface::bringDown(); }

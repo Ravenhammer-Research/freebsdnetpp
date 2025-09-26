@@ -22,7 +22,7 @@ namespace libfreebsdnet::routing {
                                      const std::string &gw,
                                      const std::string &iface, uint16_t flags,
                                      uint32_t metric)
-      : destination(dest), gateway(gw), interface(iface), flags(flags),
+      : destination(dest), gateway(gw), interface(iface), netmask(""), flags(flags),
         metric(metric), mtu(0), lastUpdated(std::chrono::system_clock::now()) {}
 
   // RoutingEntry implementation
@@ -43,6 +43,8 @@ namespace libfreebsdnet::routing {
     uint32_t getMetric() const { return info_.metric; }
 
     uint32_t getMtu() const { return info_.mtu; }
+
+    std::string getNetmask() const { return info_.netmask; }
 
     bool isActive() const { return (info_.flags & RTF_UP) != 0; }
 
@@ -87,6 +89,8 @@ namespace libfreebsdnet::routing {
   uint32_t RoutingEntry::getMetric() const { return pImpl->getMetric(); }
 
   uint32_t RoutingEntry::getMtu() const { return pImpl->getMtu(); }
+
+  std::string RoutingEntry::getNetmask() const { return pImpl->getNetmask(); }
 
   bool RoutingEntry::isActive() const { return pImpl->isActive(); }
 

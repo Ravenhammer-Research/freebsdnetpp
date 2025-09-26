@@ -12,11 +12,13 @@
 #include <errno.h>
 #include <ifaddrs.h>
 #include <interface/gif.hpp>
+#include <jail.h>
 #include <net/if.h>
 #include <net/if_gif.h>
 #include <net/if_mib.h>
 #include <net/if_private.h>
 #include <netinet/in.h>
+#include <netinet/in_var.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/sockio.h>
@@ -25,94 +27,188 @@
 
 namespace libfreebsdnet::interface {
 
-  class GifInterface::Impl {
-  public:
-    std::string name;
-    unsigned int index;
-    int flags;
-    std::string lastError;
-    int protocol;
-    std::string localAddress;
-    std::string remoteAddress;
-    int ttl;
-    bool pmtuDiscovery;
-
-    Impl(const std::string &name, unsigned int index, int flags)
-        : name(name), index(index), flags(flags), protocol(4), ttl(64), pmtuDiscovery(true) {} // Default to IPv4
-  };
-
   GifInterface::GifInterface(const std::string &name, unsigned int index, int flags)
-      : TunnelInterface(name, index, flags), pImpl(std::make_unique<Impl>(name, index, flags)) {}
+      : TunnelInterface(name, index, flags) {}
 
   GifInterface::~GifInterface() = default;
 
   InterfaceType GifInterface::getType() const {
-    return InterfaceType::TUNNEL; // GIF is a type of tunnel
+    return InterfaceType::GIF;
   }
 
   int GifInterface::getProtocol() const {
-    return pImpl->protocol;
+    // Default to IPv4 for now
+    return 4;
   }
 
   bool GifInterface::setProtocol(int protocol) {
     if (protocol < 0 || protocol > 255) {
-      pImpl->lastError = "Invalid protocol: must be between 0 and 255";
+      // Use base class error handling
       return false;
     }
-    pImpl->protocol = protocol;
-    return true; // Protocol setting would require specific GIF ioctls
+    // Protocol setting would require specific GIF ioctls
+    return true;
   }
 
   std::string GifInterface::getLocalAddress() const {
-    return pImpl->localAddress;
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+      return "";
+    }
+
+    struct ifreq ifr;
+    std::memset(&ifr, 0, sizeof(ifr));
+    std::strncpy(ifr.ifr_name, getName().c_str(), IFNAMSIZ - 1);
+
+    if (ioctl(sock, SIOCGIFPSRCADDR, &ifr) < 0) {
+      close(sock);
+      return "";
+    }
+
+    const struct sockaddr_in *sin = reinterpret_cast<const struct sockaddr_in*>(&ifr.ifr_addr);
+    if (sin->sin_family != AF_INET) {
+      close(sock);
+      return "";
+    }
+
+    char addr_str[INET_ADDRSTRLEN];
+    if (inet_ntop(AF_INET, &sin->sin_addr, addr_str, INET_ADDRSTRLEN) == nullptr) {
+      close(sock);
+      return "";
+    }
+
+    close(sock);
+    return std::string(addr_str);
   }
 
   bool GifInterface::setLocalAddress(const std::string &address) {
     // Validate IP address format
     struct in_addr addr;
     if (inet_pton(AF_INET, address.c_str(), &addr) != 1) {
-      pImpl->lastError = "Invalid IP address format";
+      // Use base class error handling
       return false;
     }
-    pImpl->localAddress = address;
-    return true; // Local address setting would require specific GIF ioctls
+
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+      // Use base class error handling
+      return false;
+    }
+
+    struct in_aliasreq addreq;
+    std::memset(&addreq, 0, sizeof(addreq));
+    std::strncpy(addreq.ifra_name, getName().c_str(), IFNAMSIZ - 1);
+    
+    // Set the local address (source)
+    struct sockaddr_in *sin = reinterpret_cast<struct sockaddr_in*>(&addreq.ifra_addr);
+    sin->sin_family = AF_INET;
+    sin->sin_addr = addr;
+
+    if (ioctl(sock, SIOCSIFPHYADDR, &addreq) < 0) {
+      // Use base class error handling
+      close(sock);
+      return false;
+    }
+
+    close(sock);
+    return true;
   }
 
   std::string GifInterface::getRemoteAddress() const {
-    return pImpl->remoteAddress;
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+      return "";
+    }
+
+    struct ifreq ifr;
+    std::memset(&ifr, 0, sizeof(ifr));
+    std::strncpy(ifr.ifr_name, getName().c_str(), IFNAMSIZ - 1);
+
+    if (ioctl(sock, SIOCGIFPDSTADDR, &ifr) < 0) {
+      close(sock);
+      return "";
+    }
+
+    const struct sockaddr_in *sin = reinterpret_cast<const struct sockaddr_in*>(&ifr.ifr_addr);
+    if (sin->sin_family != AF_INET) {
+      close(sock);
+      return "";
+    }
+
+    char addr_str[INET_ADDRSTRLEN];
+    if (inet_ntop(AF_INET, &sin->sin_addr, addr_str, INET_ADDRSTRLEN) == nullptr) {
+      close(sock);
+      return "";
+    }
+
+    close(sock);
+    return std::string(addr_str);
   }
 
   bool GifInterface::setRemoteAddress(const std::string &address) {
     // Validate IP address format
     struct in_addr addr;
     if (inet_pton(AF_INET, address.c_str(), &addr) != 1) {
-      pImpl->lastError = "Invalid IP address format";
+      // Use base class error handling
       return false;
     }
-    pImpl->remoteAddress = address;
-    return true; // Remote address setting would require specific GIF ioctls
+
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+      // Use base class error handling
+      return false;
+    }
+
+    struct in_aliasreq addreq;
+    std::memset(&addreq, 0, sizeof(addreq));
+    std::strncpy(addreq.ifra_name, getName().c_str(), IFNAMSIZ - 1);
+    
+    // Set the remote address (destination)
+    struct sockaddr_in *sin = reinterpret_cast<struct sockaddr_in*>(&addreq.ifra_dstaddr);
+    sin->sin_family = AF_INET;
+    sin->sin_addr = addr;
+
+    if (ioctl(sock, SIOCSIFPHYADDR, &addreq) < 0) {
+      // Use base class error handling
+      close(sock);
+      return false;
+    }
+
+    close(sock);
+    return true;
   }
 
   int GifInterface::getTtl() const {
-    return pImpl->ttl;
+    // Default TTL for GIF
+    return 64;
   }
 
   bool GifInterface::setTtl(int ttl) {
     if (ttl < 0 || ttl > 255) {
-      pImpl->lastError = "Invalid TTL: must be between 0 and 255";
+      // Use base class error handling
       return false;
     }
-    pImpl->ttl = ttl;
-    return true; // TTL setting would require specific GIF ioctls
+    // TTL setting would require specific GIF ioctls
+    return true;
   }
 
   bool GifInterface::isPmtuDiscoveryEnabled() const {
-    return pImpl->pmtuDiscovery;
+    // Default to enabled
+    return true;
   }
 
   bool GifInterface::setPmtuDiscovery(bool enabled) {
-    pImpl->pmtuDiscovery = enabled;
-    return true; // PMTU discovery setting would require specific GIF ioctls
+    (void)enabled; // Suppress unused parameter warning
+    // PMTU discovery setting would require specific GIF ioctls
+    return true;
+  }
+
+  int GifInterface::getTunnelFib() const {
+    return TunnelInterface::getTunnelFib();
+  }
+
+  bool GifInterface::setTunnelFib(int fib) {
+    return TunnelInterface::setTunnelFib(fib);
   }
 
   // Group management methods (call base class)
@@ -197,6 +293,11 @@ namespace libfreebsdnet::interface {
   int GifInterface::getVnet() const {
     // VNET functionality not implemented yet
     return -1;
+  }
+
+  std::string GifInterface::getVnetJailName() const {
+    // VNET functionality not implemented yet
+    return "";
   }
 
   bool GifInterface::setVnet(int vnetId) {

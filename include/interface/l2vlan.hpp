@@ -41,7 +41,7 @@ namespace libfreebsdnet::interface {
     std::string getName() const override;
     unsigned int getIndex() const override;
     InterfaceType getType() const override;
-    int getFlags() const override;
+    std::vector<Flag> getFlags() const override;
     bool setFlags(int flags) override;
     bool bringUp() override;
     bool bringDown() override;

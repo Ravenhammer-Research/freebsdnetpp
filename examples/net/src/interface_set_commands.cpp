@@ -11,6 +11,7 @@
 #include <interface/wireless.hpp>
 #include <interface/bridge.hpp>
 #include <interface/lagg.hpp>
+#include <interface/gif.hpp>
 #include <interface/vnet.hpp>
 #include <system/config.hpp>
 #include <iostream>
@@ -244,6 +245,67 @@ namespace net {
         printSuccess("Set address " + value + " for interface " + name +
                      " (not implemented)");
         return true;
+      } else if (property == "local") {
+        // Set GIF local address
+        if (name.substr(0, 3) == "gif") {
+          auto gifIface = dynamic_cast<libfreebsdnet::interface::GifInterface*>(iface.get());
+          if (gifIface) {
+            if (gifIface->setLocalAddress(value)) {
+              printSuccess("Set local address " + value + " for GIF interface " + name);
+              return true;
+            } else {
+              printError("Failed to set local address: " + gifIface->getLastError());
+              return false;
+            }
+          } else {
+            printError("Failed to get GIF interface object for: " + name);
+            return false;
+          }
+        } else {
+          printError("Local address setting only supported for GIF interfaces");
+          return false;
+        }
+      } else if (property == "remote") {
+        // Set GIF remote address
+        if (name.substr(0, 3) == "gif") {
+          auto gifIface = dynamic_cast<libfreebsdnet::interface::GifInterface*>(iface.get());
+          if (gifIface) {
+            if (gifIface->setRemoteAddress(value)) {
+              printSuccess("Set remote address " + value + " for GIF interface " + name);
+              return true;
+            } else {
+              printError("Failed to set remote address: " + gifIface->getLastError());
+              return false;
+            }
+          } else {
+            printError("Failed to get GIF interface object for: " + name);
+            return false;
+          }
+        } else {
+          printError("Remote address setting only supported for GIF interfaces");
+          return false;
+        }
+      } else if (property == "tunfib") {
+        // Set tunnel FIB
+        if (name.substr(0, 3) == "gif") {
+          auto gifIface = dynamic_cast<libfreebsdnet::interface::GifInterface*>(iface.get());
+          if (gifIface) {
+            int fib = std::stoi(value);
+            if (gifIface->setTunnelFib(fib)) {
+              printSuccess("Set tunnel FIB " + std::to_string(fib) + " for GIF interface " + name);
+              return true;
+            } else {
+              printError("Failed to set tunnel FIB: " + gifIface->getLastError());
+              return false;
+            }
+          } else {
+            printError("Failed to get GIF interface object for: " + name);
+            return false;
+          }
+        } else {
+          printError("Tunnel FIB setting only supported for GIF interfaces");
+          return false;
+        }
       } else if (property == "mtu") {
         // Set interface MTU
         int mtu = std::stoi(value);

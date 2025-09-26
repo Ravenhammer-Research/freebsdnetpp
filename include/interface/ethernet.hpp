@@ -41,7 +41,6 @@ namespace libfreebsdnet::interface {
     std::string getName() const override;
     unsigned int getIndex() const override;
     InterfaceType getType() const override;
-    int getFlags() const override;
     bool setFlags(int flags) override;
     bool bringUp() override;
     bool bringDown() override;
@@ -109,6 +108,7 @@ namespace libfreebsdnet::interface {
     bool addToGroup(const std::string &groupName) override;
     bool removeFromGroup(const std::string &groupName) override;
     int getVnet() const override;
+    std::string getVnetJailName() const override;
     bool setVnet(int vnetId) override;
     bool reclaimFromVnet() override;
     bool setPhysicalAddress(const std::string &address) override;
@@ -117,6 +117,11 @@ namespace libfreebsdnet::interface {
     std::vector<std::string> getCloners() const override;
     std::string getMacAddress() const override;
     bool setMacAddress(const std::string &macAddress) override;
+
+    // Override base class methods to provide Ethernet-specific implementations
+    MediaInfo getMediaInfo() const override;
+    std::vector<Capability> getCapabilityList() const override;
+    std::vector<Flag> getFlags() const override;
 
     bool destroy() override;
 

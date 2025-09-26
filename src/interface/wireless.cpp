@@ -12,6 +12,7 @@
 #include <cstring>
 #include <ifaddrs.h>
 #include <interface/wireless.hpp>
+#include <jail.h>
 #include <net/ethernet.h>
 #include <net/if.h>
 #include <net/if_dl.h>
@@ -57,7 +58,7 @@ namespace libfreebsdnet::interface {
   // Base class method implementations
   std::string WirelessInterface::getName() const { return Interface::getName(); }
   unsigned int WirelessInterface::getIndex() const { return Interface::getIndex(); }
-  int WirelessInterface::getFlags() const { return Interface::getFlags(); }
+  std::vector<Flag> WirelessInterface::getFlags() const { return Interface::getFlags(); }
   bool WirelessInterface::setFlags(int flags) { return Interface::setFlags(flags); }
   std::string WirelessInterface::getLastError() const { return Interface::getLastError(); }
 
@@ -140,6 +141,22 @@ namespace libfreebsdnet::interface {
 
     close(sock);
     return ifr.ifr_jid;
+  }
+
+  std::string WirelessInterface::getVnetJailName() const {
+    int vnetId = getVnet();
+    if (vnetId < 0) {
+      return "";
+    }
+
+    char *jailName = jail_getname(vnetId);
+    if (jailName != nullptr) {
+      std::string result(jailName);
+      free(jailName);
+      return result;
+    }
+
+    return "";
   }
 
   bool WirelessInterface::setVnet(int vnetId) {

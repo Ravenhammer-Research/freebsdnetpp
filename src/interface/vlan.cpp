@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <ifaddrs.h>
 #include <interface/vlan.hpp>
+#include <jail.h>
 #include <net/ethernet.h>
 #include <net/if.h>
 #include <net/if_dl.h>
@@ -50,7 +51,7 @@ namespace libfreebsdnet::interface {
 
   InterfaceType VlanInterface::getType() const { return InterfaceType::VLAN; }
 
-  int VlanInterface::getFlags() const { return Interface::getFlags(); }
+  std::vector<Flag> VlanInterface::getFlags() const { return Interface::getFlags(); }
 
   bool VlanInterface::setFlags(int flags) {
     return Interface::setFlags(flags);
@@ -262,6 +263,22 @@ namespace libfreebsdnet::interface {
 
     close(sock);
     return ifr.ifr_jid;
+  }
+
+  std::string VlanInterface::getVnetJailName() const {
+    int vnetId = getVnet();
+    if (vnetId < 0) {
+      return "";
+    }
+
+    char *jailName = jail_getname(vnetId);
+    if (jailName != nullptr) {
+      std::string result(jailName);
+      free(jailName);
+      return result;
+    }
+
+    return "";
   }
 
   bool VlanInterface::setVnet(int vnetId) {

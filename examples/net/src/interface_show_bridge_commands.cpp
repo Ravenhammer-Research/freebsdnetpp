@@ -42,11 +42,9 @@ namespace net {
     printInfo("=================");
     printInfo("");
     
-    // Print table header
-    printf("%-12s %-6s %-8s %-6s %-8s %-6s %-8s %-20s\n", 
-           "Interface", "Index", "Status", "MTU", "FIB", "STP", "Ageing", "Members");
-    printf("%-12s %-6s %-8s %-6s %-8s %-6s %-8s %-20s\n", 
-           "----------", "-----", "------", "---", "---", "---", "-------", "-------");
+    // Prepare table data
+    std::vector<std::vector<std::string>> data;
+    std::vector<std::string> headers = {"Interface", "Status", "FIB", "STP", "Members"};
     
     for (const auto& interface : bridgeInterfaces) {
       // Get interface information directly
@@ -62,9 +60,8 @@ namespace net {
         }
       }
       
-      // Get additional bridge information
+      // Get STP status
       std::string stpStatus = "Unknown";
-      std::string ageingTime = "Unknown";
       
       // Cast to BridgeInterface to access bridge-specific methods
       auto bridgeIface = dynamic_cast<libfreebsdnet::interface::BridgeInterface*>(interface.get());
@@ -75,49 +72,43 @@ namespace net {
         } else {
           stpStatus = "OFF";
         }
-        
-        // Get actual ageing time
-        int aging = bridgeIface->getAgingTime();
-        if (aging > 0) {
-          ageingTime = std::to_string(aging) + "s";
-        } else {
-          ageingTime = "Unknown";
-        }
       } else {
         stpStatus = "N/A";
-        ageingTime = "N/A";
       }
       
-      // Print bridge info with members on separate lines
+      // Create rows for bridge info with members on separate lines
       if (memberList.empty()) {
-        printf("%-12s %-6u %-8s %-6d %-8d %-6s %-8s %-20s\n",
-               interface->getName().c_str(),
-               interface->getIndex(),
-               interface->isUp() ? "UP" : "DOWN",
-               interface->getMtu(),
-               fib,
-               stpStatus.c_str(),
-               ageingTime.c_str(),
-               "None");
+        std::vector<std::string> row;
+        row.push_back(interface->getName());
+        row.push_back(interface->isUp() ? "UP" : "DOWN");
+        row.push_back(std::to_string(fib));
+        row.push_back(stpStatus);
+        row.push_back("None");
+        data.push_back(row);
       } else {
-        // Print first row with first member
-        printf("%-12s %-6u %-8s %-6d %-8d %-6s %-8s %-20s\n",
-               interface->getName().c_str(),
-               interface->getIndex(),
-               interface->isUp() ? "UP" : "DOWN",
-               interface->getMtu(),
-               fib,
-               stpStatus.c_str(),
-               ageingTime.c_str(),
-               memberList[0].c_str());
+        // First row with first member
+        std::vector<std::string> row;
+        row.push_back(interface->getName());
+        row.push_back(interface->isUp() ? "UP" : "DOWN");
+        row.push_back(std::to_string(fib));
+        row.push_back(stpStatus);
+        row.push_back(memberList[0]);
+        data.push_back(row);
         
-        // Print additional rows for remaining members
+        // Additional rows for remaining members
         for (size_t i = 1; i < memberList.size(); i++) {
-          printf("%-12s %-6s %-8s %-6s %-8s %-6s %-8s %-20s\n",
-                 "", "", "", "", "", "", "", memberList[i].c_str());
+          std::vector<std::string> memberRow;
+          memberRow.push_back("");
+          memberRow.push_back("");
+          memberRow.push_back("");
+          memberRow.push_back("");
+          memberRow.push_back(memberList[i]);
+          data.push_back(memberRow);
         }
       }
     }
+    
+    printTable(data, headers);
     
     return true;
   }

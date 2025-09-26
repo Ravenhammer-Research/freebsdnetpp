@@ -57,22 +57,33 @@ namespace net {
       }
     }
 
+    // Helper function to center text in a field
+    auto centerText = [](const std::string& text, size_t width) {
+      if (text.length() >= width) {
+        return text;
+      }
+      size_t padding = width - text.length();
+      size_t leftPadding = padding / 2;
+      size_t rightPadding = padding - leftPadding;
+      return std::string(leftPadding, ' ') + text + std::string(rightPadding, ' ');
+    };
+
     // Print header
     for (size_t i = 0; i < headers.size(); i++) {
-      std::cout << std::setw(widths[i] + 2) << std::left << headers[i];
+      std::cout << centerText(headers[i], widths[i] + 1);
     }
     std::cout << std::endl;
 
     // Print separator
     for (size_t i = 0; i < headers.size(); i++) {
-      std::cout << std::string(widths[i] + 2, '-');
+      std::cout << std::string(widths[i] + 1, '-');
     }
     std::cout << std::endl;
 
     // Print data
     for (const auto &row : data) {
       for (size_t i = 0; i < row.size() && i < widths.size(); i++) {
-        std::cout << std::setw(widths[i] + 2) << std::left << row[i];
+        std::cout << centerText(row[i], widths[i] + 1);
       }
       std::cout << std::endl;
     }

@@ -49,7 +49,7 @@ namespace libfreebsdnet::interface {
   std::string PflogInterface::getName() const { return Interface::getName(); }
   unsigned int PflogInterface::getIndex() const { return Interface::getIndex(); }
   InterfaceType PflogInterface::getType() const { return InterfaceType::PFLOG; }
-  int PflogInterface::getFlags() const { return Interface::getFlags(); }
+  std::vector<Flag> PflogInterface::getFlags() const { return Interface::getFlags(); }
   bool PflogInterface::setFlags(int flags) { return Interface::setFlags(flags); }
   bool PflogInterface::bringUp() { return Interface::bringUp(); }
   bool PflogInterface::bringDown() { return Interface::bringDown(); }

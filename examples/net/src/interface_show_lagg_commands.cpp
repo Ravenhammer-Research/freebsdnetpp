@@ -42,11 +42,9 @@ namespace net {
     printInfo("===============");
     printInfo("");
     
-    // Print table header
-    printf("%-12s %-6s %-8s %-6s %-8s %-12s %-8s %-20s\n", 
-           "Interface", "Index", "Status", "MTU", "FIB", "Protocol", "Hash", "Ports");
-    printf("%-12s %-6s %-8s %-6s %-8s %-12s %-8s %-20s\n", 
-           "----------", "-----", "------", "---", "---", "----------", "----", "-----");
+    // Prepare table data
+    std::vector<std::vector<std::string>> data;
+    std::vector<std::string> headers = {"Interface", "Index", "Status", "MTU", "FIB", "Protocol", "Hash", "Ports"};
     
     for (const auto& interface : laggInterfaces) {
       // Get interface information directly
@@ -115,15 +113,6 @@ namespace net {
         }
       }
       
-      // Format ports list
-      std::string portsStr = "None";
-      if (!portList.empty()) {
-        portsStr = portList[0];
-        for (size_t i = 1; i < portList.size(); i++) {
-          portsStr += "," + portList[i];
-        }
-      }
-      
       // Split ports by commas
       std::vector<std::string> portStrList;
       if (!portList.empty()) {
@@ -138,36 +127,38 @@ namespace net {
         maxRows = 1; // At least one row
       }
       
-      // Print lagg info with multiple rows for hash and ports
+      // Create rows for lagg info with multiple rows for hash and ports
       for (size_t i = 0; i < maxRows; i++) {
         std::string hashValue = (i < hashList.size()) ? hashList[i] : "";
         std::string portValue = (i < portStrList.size()) ? portStrList[i] : "";
         
+        std::vector<std::string> row;
         if (i == 0) {
           // First row includes all other columns
-        printf("%-12s %-6u %-8s %-6d %-8d %-12s %-8s %-20s\n",
-               interface->getName().c_str(),
-               interface->getIndex(),
-               interface->isUp() ? "UP" : "DOWN",
-               interface->getMtu(),
-               fib,
-               protocol.c_str(),
-               hashValue.c_str(),
-               portValue.c_str());
+          row.push_back(interface->getName());
+          row.push_back(std::to_string(interface->getIndex()));
+          row.push_back(interface->isUp() ? "UP" : "DOWN");
+          row.push_back(std::to_string(interface->getMtu()));
+          row.push_back(std::to_string(fib));
+          row.push_back(protocol);
+          row.push_back(hashValue);
+          row.push_back(portValue);
         } else {
-          // Subsequent rows only show hash and ports, with spaces for other columns
-          printf("%-12s %-6s %-8s %-6s %-8s %-12s %-8s %-20s\n",
-                 "",
-                 "",
-                 "",
-                 "",
-                 "",
-                 "",
-                 hashValue.c_str(),
-                 portValue.c_str());
+          // Subsequent rows only show hash and ports, with empty strings for other columns
+          row.push_back("");
+          row.push_back("");
+          row.push_back("");
+          row.push_back("");
+          row.push_back("");
+          row.push_back("");
+          row.push_back(hashValue);
+          row.push_back(portValue);
         }
+        data.push_back(row);
       }
     }
+    
+    printTable(data, headers);
     
     return true;
   }

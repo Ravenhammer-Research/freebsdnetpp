@@ -40,7 +40,7 @@ namespace libfreebsdnet::interface {
     std::string getName() const override;
     unsigned int getIndex() const override;
     InterfaceType getType() const override;
-    int getFlags() const override;
+    std::vector<Flag> getFlags() const override;
     bool setFlags(int flags) override;
     bool bringUp() override;
     bool bringDown() override;
@@ -136,6 +136,7 @@ namespace libfreebsdnet::interface {
     bool addToGroup(const std::string &groupName) override;
     bool removeFromGroup(const std::string &groupName) override;
     int getVnet() const override;
+    std::string getVnetJailName() const override;
     bool setVnet(int vnetId) override;
     bool reclaimFromVnet() override;
     bool setPhysicalAddress(const std::string &address) override;
@@ -146,6 +147,14 @@ namespace libfreebsdnet::interface {
     bool setMacAddress(const std::string &macAddress) override;
 
     bool destroy() override;
+
+    // Bridge STP getters
+    int getHelloTime() const;
+    int getForwardDelay() const;
+    int getProtocol() const;
+    int getMaxAddresses() const;
+    int getInterfaceCost(const std::string &interfaceName) const;
+    int getRootPathCost() const;
 
   };
 

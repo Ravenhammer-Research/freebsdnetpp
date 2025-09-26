@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <ifaddrs.h>
 #include <interface/lagg.hpp>
+#include <jail.h>
 #include <net/ethernet.h>
 #include <net/if.h>
 #include <net/if_dl.h>
@@ -42,7 +43,7 @@ namespace libfreebsdnet::interface {
 
   InterfaceType LagInterface::getType() const { return InterfaceType::LAGG; }
 
-  int LagInterface::getFlags() const { return Interface::getFlags(); }
+  std::vector<Flag> LagInterface::getFlags() const { return Interface::getFlags(); }
   bool LagInterface::setFlags(int flags) { return Interface::setFlags(flags); }
   bool LagInterface::bringUp() { return Interface::bringUp(); }
   bool LagInterface::bringDown() { return Interface::bringDown(); }
@@ -292,6 +293,22 @@ namespace libfreebsdnet::interface {
 
     close(sock);
     return ifr.ifr_jid;
+  }
+
+  std::string LagInterface::getVnetJailName() const {
+    int vnetId = getVnet();
+    if (vnetId < 0) {
+      return "";
+    }
+
+    char *jailName = jail_getname(vnetId);
+    if (jailName != nullptr) {
+      std::string result(jailName);
+      free(jailName);
+      return result;
+    }
+
+    return "";
   }
 
   bool LagInterface::setVnet(int vnetId) {

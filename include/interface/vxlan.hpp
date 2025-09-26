@@ -125,6 +125,7 @@ namespace libfreebsdnet::interface {
 
     // VNET interface methods
     int getVnet() const override;
+    std::string getVnetJailName() const override;
     bool setVnet(int vnetId) override;
     bool reclaimFromVnet() override;
 

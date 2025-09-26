@@ -30,14 +30,53 @@ namespace net {
       }
 
       std::vector<std::vector<std::string>> data;
-      std::vector<std::string> headers = {"Destination", "Gateway", "Netmask",
-                                          "Flags", "Interface"};
+      std::vector<std::string> headers = {"Destination", "Netmask", "Scope", "Gateway", "Flags", "Interface"};
 
       for (const auto &entry : entries) {
         std::vector<std::string> row;
-        row.push_back(entry->getDestination());
+        
+        // Use CIDR notation for network routes, no CIDR for host routes
+        std::string destination = entry->getDestination();
+        std::string scope_interface = "";
+        
+        // Extract scope interface from IPv6 addresses
+        if (destination.find('%') != std::string::npos) {
+          size_t scope_pos = destination.find('%');
+          scope_interface = destination.substr(scope_pos + 1);
+          destination = destination.substr(0, scope_pos);
+        }
+        
+        if (entry->isNetwork() && destination.find('/') == std::string::npos) {
+          // Add default CIDR based on address family
+          if (destination.find(':') != std::string::npos) {
+            // IPv6 - determine prefix length based on route type
+            if (destination == "::") {
+              destination = "::/0"; // Default route
+            } else if (destination.find("fe80::") == 0) {
+              destination += "/64"; // Link-local
+            } else if (destination.find("ff02::") == 0) {
+              destination += "/16"; // Multicast
+            } else {
+              destination += "/128"; // Host route
+            }
+          } else {
+            // IPv4 - determine prefix length based on route type
+            if (destination == "0.0.0.0") {
+              destination = "0.0.0.0/0"; // Default route
+            } else if (destination.find("127.") == 0) {
+              destination += "/32"; // Loopback
+            } else if (destination.find("10.") == 0 || destination.find("192.168.") == 0) {
+              destination += "/24"; // Private networks
+            } else {
+              destination += "/32"; // Host route
+            }
+          }
+        }
+        
+        row.push_back(destination);
+        row.push_back(entry->getNetmask());
+        row.push_back(scope_interface);
         row.push_back(entry->getGateway());
-        row.push_back("N/A"); // Netmask not available in RoutingEntry
         row.push_back(std::to_string(entry->getFlags()));
         row.push_back(entry->getInterface());
         data.push_back(row);

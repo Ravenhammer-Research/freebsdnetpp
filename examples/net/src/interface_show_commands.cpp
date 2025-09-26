@@ -11,6 +11,7 @@
 #include <interface/wireless.hpp>
 #include <interface/bridge.hpp>
 #include <interface/lagg.hpp>
+#include <interface/gif.hpp>
 #include <interface/vnet.hpp>
 #include <system/config.hpp>
 #include <iostream>
@@ -20,6 +21,32 @@
 #include <net_tool.hpp>
 
 namespace net {
+
+  // Helper function to format interface flags as single letters
+  std::string formatFlags(const std::vector<libfreebsdnet::interface::Flag>& flags) {
+    std::string result = "";
+    for (const auto& flag : flags) {
+      switch (flag) {
+        case libfreebsdnet::interface::Flag::UP: result += "U"; break;
+        case libfreebsdnet::interface::Flag::RUNNING: result += "R"; break;
+        case libfreebsdnet::interface::Flag::BROADCAST: result += "B"; break;
+        case libfreebsdnet::interface::Flag::MULTICAST: result += "M"; break;
+        case libfreebsdnet::interface::Flag::LOOPBACK: result += "L"; break;
+        case libfreebsdnet::interface::Flag::POINTOPOINT: result += "P"; break;
+        case libfreebsdnet::interface::Flag::SIMPLEX: result += "S"; break;
+        case libfreebsdnet::interface::Flag::DRV_RUNNING: result += "D"; break;
+        case libfreebsdnet::interface::Flag::NOARP: result += "A"; break;
+        case libfreebsdnet::interface::Flag::PROMISC: result += "p"; break;
+        case libfreebsdnet::interface::Flag::ALLMULTI: result += "a"; break;
+        case libfreebsdnet::interface::Flag::OACTIVE: result += "o"; break;
+        case libfreebsdnet::interface::Flag::LINK0: result += "0"; break;
+        case libfreebsdnet::interface::Flag::LINK1: result += "1"; break;
+        case libfreebsdnet::interface::Flag::LINK2: result += "2"; break;
+        default: break;
+      }
+    }
+    return result.empty() ? "-" : result;
+  }
 
   bool NetTool::handleShowInterfaces(const std::vector<std::string> &args) {
     (void)args; // Suppress unused parameter warning
@@ -31,9 +58,16 @@ namespace net {
         return true;
       }
 
+      // Print flags legend at the top
+      printInfo("Flags Legend:");
+      printInfo("  U = UP, R = RUNNING, B = BROADCAST, M = MULTICAST");
+      printInfo("  L = LOOPBACK, P = POINTOPOINT, S = SIMPLEX, D = DRV_RUNNING");
+      printInfo("  A = NOARP, p = PROMISC, a = ALLMULTI, o = OACTIVE");
+      printInfo("  0/1/2 = LINK0/LINK1/LINK2");
+      printInfo("");
+
       std::vector<std::vector<std::string>> data;
-      std::vector<std::string> headers = {"Name", "Index",   "Type",
-                                          "MTU",  "Address", "Status", "FIB"};
+      std::vector<std::string> headers = {"Name", "Type", "MTU", "Address", "Status", "FIB", "Flags"};
 
       for (const auto &interface : interfaces) {
         // Get interface type from the interface object
@@ -59,7 +93,10 @@ namespace net {
           type_str = "EthernetPair";
           break;
         case libfreebsdnet::interface::InterfaceType::LAGG:
-          type_str = "LAGG";
+          type_str = "LinkAggregate";
+          break;
+        case libfreebsdnet::interface::InterfaceType::GIF:
+          type_str = "GenericTunnel";
           break;
         default:
           type_str = "Unknown";
@@ -67,6 +104,7 @@ namespace net {
         }
 
         std::string status = interface->isUp() ? "UP" : "DOWN";
+        std::string flags_str = formatFlags(interface->getFlags());
 
         // Get addresses from the interface object
         auto addresses = interface->getAddresses();
@@ -74,7 +112,6 @@ namespace net {
           // No addresses - show one row with "None"
           std::vector<std::string> row;
           row.push_back(interface->getName());
-          row.push_back(std::to_string(interface->getIndex()));
           row.push_back(type_str);
           row.push_back(std::to_string(interface->getMtu()));
           row.push_back("None");
@@ -85,6 +122,7 @@ namespace net {
           } catch (...) {
             row.push_back("0"); // Default FIB on error
           }
+          row.push_back(flags_str);
           data.push_back(row);
         } else {
           // Get FIB for this interface (only need to do this once)
@@ -100,8 +138,6 @@ namespace net {
             std::vector<std::string> row;
             row.push_back(i == 0 ? interface->getName()
                                  : ""); // Only show name on first row
-            row.push_back(i == 0 ? std::to_string(interface->getIndex())
-                                 : ""); // Only show index on first row
             row.push_back(i == 0 ? type_str
                                  : ""); // Only show type on first row
             row.push_back(i == 0 ? std::to_string(interface->getMtu())
@@ -111,6 +147,8 @@ namespace net {
                                  : ""); // Only show status on first row
             row.push_back(i == 0 ? fib_str
                                  : ""); // Only show FIB on first row
+            row.push_back(i == 0 ? flags_str
+                                 : ""); // Only show flags on first row
             data.push_back(row);
           }
         }
@@ -216,7 +254,10 @@ namespace net {
           type_str = "EthernetPair";
           break;
         case libfreebsdnet::interface::InterfaceType::LAGG:
-          type_str = "LAGG";
+          type_str = "LinkAggregate";
+          break;
+        case libfreebsdnet::interface::InterfaceType::GIF:
+          type_str = "GenericTunnel";
           break;
         default:
           type_str = "Unknown";
@@ -224,20 +265,19 @@ namespace net {
         }
 
         std::string status = iface->isUp() ? "UP" : "DOWN";
+        auto flags = iface->getFlags();
         std::string flags_str = "";
-        int flags = iface->getFlags();
-        if (flags & IFF_UP)
-          flags_str += "UP ";
-        if (flags & IFF_RUNNING)
-          flags_str += "RUNNING ";
-        if (flags & IFF_BROADCAST)
-          flags_str += "BROADCAST ";
-        if (flags & IFF_MULTICAST)
-          flags_str += "MULTICAST ";
-        if (flags & IFF_LOOPBACK)
-          flags_str += "LOOPBACK ";
-        if (flags & IFF_POINTOPOINT)
-          flags_str += "POINTOPOINT ";
+        for (const auto& flag : flags) {
+          switch (flag) {
+            case libfreebsdnet::interface::Flag::UP: flags_str += "UP "; break;
+            case libfreebsdnet::interface::Flag::RUNNING: flags_str += "RUNNING "; break;
+            case libfreebsdnet::interface::Flag::BROADCAST: flags_str += "BROADCAST "; break;
+            case libfreebsdnet::interface::Flag::MULTICAST: flags_str += "MULTICAST "; break;
+            case libfreebsdnet::interface::Flag::LOOPBACK: flags_str += "LOOPBACK "; break;
+            case libfreebsdnet::interface::Flag::POINTOPOINT: flags_str += "POINTOPOINT "; break;
+            default: break;
+          }
+        }
 
         printInfo("Interface: " + name);
         printInfo("  Index:        " + std::to_string(iface->getIndex()));
@@ -252,10 +292,14 @@ namespace net {
                   std::to_string(iface->getCapabilities()));
         auto vnetIface = dynamic_cast<libfreebsdnet::interface::VnetInterface*>(iface.get());
         if (vnetIface) {
-          printInfo("  VNET:         " + std::to_string(vnetIface->getVnet()));
-        } else {
-          printInfo("  VNET:         Not supported");
+          std::string jailName = vnetIface->getVnetJailName();
+          if (!jailName.empty()) {
+            int vnetId = vnetIface->getVnet();
+            printInfo("  VNET:         " + jailName + " (jid: " + std::to_string(vnetId) + ")");
+          }
+          // If jail name is empty, don't display VNET field at all
         }
+        // If not a VnetInterface, don't display VNET field at all
         printInfo("  MAC:          " + iface->getMacAddress());
 
         auto groups = iface->getGroups();
@@ -282,7 +326,61 @@ namespace net {
         }
 
         // Show additional interface-specific information
-        if (type_str == "IEEE80211") {
+        if (type_str == "Bridge") {
+          auto bridgeIface = dynamic_cast<libfreebsdnet::interface::BridgeInterface*>(iface.get());
+          if (bridgeIface) {
+            printInfo("  Bridge Info:");
+            printInfo("    STP:          " + std::string(bridgeIface->isStpEnabled() ? "ON" : "OFF"));
+            int aging = bridgeIface->getAgingTime();
+            if (aging > 0) {
+              printInfo("    Ageing:       " + std::to_string(aging) + "s");
+            }
+            int hello = bridgeIface->getHelloTime();
+            if (hello > 0) {
+              printInfo("    Hello Time:   " + std::to_string(hello) + "s");
+            }
+            int fwd = bridgeIface->getForwardDelay();
+            if (fwd > 0) {
+              printInfo("    Forward Delay:" + std::to_string(fwd) + "s");
+            }
+            int proto = bridgeIface->getProtocol();
+            if (proto >= 0) {
+              std::string protoStr = (proto == 0) ? "STP" : (proto == 2) ? "RSTP" : "Unknown";
+              printInfo("    Protocol:     " + protoStr);
+            }
+            int maxAddr = bridgeIface->getMaxAddresses();
+            if (maxAddr > 0) {
+              printInfo("    Max Addresses:" + std::to_string(maxAddr));
+            }
+            int priority = bridgeIface->getPriority();
+            if (priority >= 0) {
+              printInfo("    Priority:     " + std::to_string(priority));
+            }
+            int rootCost = bridgeIface->getRootPathCost();
+            if (rootCost >= 0) {
+              printInfo("    Root Cost:    " + std::to_string(rootCost));
+            }
+          }
+        } else if (type_str == "GenericTunnel") {
+          auto gifIface = dynamic_cast<libfreebsdnet::interface::GifInterface*>(iface.get());
+          if (gifIface) {
+            printInfo("  GIF Info:");
+            std::string localAddr = gifIface->getLocalAddress();
+            std::string remoteAddr = gifIface->getRemoteAddress();
+            printInfo("    Local:        " + (localAddr.empty() ? "None" : localAddr));
+            printInfo("    Remote:       " + (remoteAddr.empty() ? "None" : remoteAddr));
+            int protocol = gifIface->getProtocol();
+            printInfo("    Protocol:     " + std::to_string(protocol));
+            int ttl = gifIface->getTtl();
+            printInfo("    TTL:          " + std::to_string(ttl));
+            bool pmtu = gifIface->isPmtuDiscoveryEnabled();
+            printInfo("    PMTU Discovery:" + std::string(pmtu ? "ON" : "OFF"));
+            int tunnelFib = gifIface->getTunnelFib();
+            if (tunnelFib >= 0) {
+              printInfo("    Tunnel FIB:   " + std::to_string(tunnelFib));
+            }
+          }
+        } else if (type_str == "IEEE80211") {
           printInfo("  Wireless Info:");
           printInfo("    SSID: (wireless interface detected)");
           printInfo("    Mode: (wireless interface detected)");
@@ -311,6 +409,10 @@ namespace net {
         return handleShowInterfaceTypeBridge(args);
       } else if (type == "lagg") {
         return handleShowInterfaceTypeLagg(args);
+      } else if (type == "gif") {
+        return handleShowInterfaceTypeGif(args);
+      } else if (type == "ethernet") {
+        return handleShowInterfaceTypeEthernet(args);
       } else {
         printError("Unsupported interface type: " + type);
         return false;

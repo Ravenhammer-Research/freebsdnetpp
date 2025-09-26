@@ -29,6 +29,7 @@ namespace libfreebsdnet::interface {
     PPP,
     SLIP,
     TUNNEL,
+    GIF,             // Generic IP-in-IP tunnel
     BRIDGE,
     VLAN,
     WIRELESS, // IEEE 802.11 wireless
@@ -46,6 +47,91 @@ namespace libfreebsdnet::interface {
     EPAIR,          // Ethernet pair interface
     INFINIBAND_LAG, // InfiniBand Link Aggregation
     IEEE8023AD_LAG  // IEEE 802.3ad Link Aggregation
+  };
+
+  /**
+   * @brief Media type enumeration
+   */
+  enum class MediaType {
+    UNKNOWN,
+    ETHERNET
+  };
+
+  /**
+   * @brief Media subtype enumeration
+   */
+  enum class MediaSubtype {
+    UNKNOWN,
+    ETHERNET_10_T,
+    ETHERNET_10_2,
+    ETHERNET_10_5,
+    ETHERNET_100_TX,
+    ETHERNET_100_FX,
+    ETHERNET_1000_T,
+    ETHERNET_1000_SX,
+    ETHERNET_1000_LX,
+    ETHERNET_10G_T,
+    ETHERNET_10G_SR,
+    ETHERNET_10G_LR,
+    ETHERNET_2500_T,
+    ETHERNET_5000_T
+  };
+
+  /**
+   * @brief Media option enumeration
+   */
+  enum class MediaOption {
+    FULL_DUPLEX,
+    HALF_DUPLEX,
+    AUTO_SELECT
+  };
+
+  /**
+   * @brief Capability enumeration
+   */
+  enum class Capability {
+    RXCSUM,
+    TXCSUM,
+    VLAN_MTU,
+    VLAN_HWTAGGING,
+    VLAN_HWCSUM,
+    WOL_MAGIC,
+    LINKSTATE,
+    TSO4,
+    TSO6,
+    LRO
+  };
+
+  /**
+   * @brief Interface flag enumeration
+   */
+  enum class Flag {
+    UP,
+    BROADCAST,
+    DEBUG,
+    LOOPBACK,
+    POINTOPOINT,
+    RUNNING,
+    NOARP,
+    PROMISC,
+    ALLMULTI,
+    OACTIVE,
+    SIMPLEX,
+    LINK0,
+    LINK1,
+    LINK2,
+    MULTICAST,
+    DRV_RUNNING
+  };
+
+  /**
+   * @brief Media information structure
+   */
+  struct MediaInfo {
+    MediaType type;
+    MediaSubtype subtype;
+    std::vector<MediaOption> options;
+    bool isActive;
   };
 
   /**
@@ -78,7 +164,7 @@ namespace libfreebsdnet::interface {
      * @brief Get interface flags
      * @return Interface flags
      */
-    virtual int getFlags() const;
+    virtual std::vector<Flag> getFlags() const;
 
     /**
      * @brief Set interface flags
@@ -186,6 +272,18 @@ namespace libfreebsdnet::interface {
      * @return Enabled capabilities bitmask
      */
     virtual uint32_t getEnabledCapabilities() const = 0;
+
+    /**
+     * @brief Get media information
+     * @return Media information structure
+     */
+    virtual MediaInfo getMediaInfo() const;
+
+    /**
+     * @brief Get interface capabilities as enum list
+     * @return List of capability enums
+     */
+    virtual std::vector<Capability> getCapabilityList() const;
 
     /**
      * @brief Enable interface capabilities

@@ -135,13 +135,13 @@ namespace libfreebsdnet::interface {
   }
 
   bool Interface::bringUp() {
-    int currentFlags = getFlags();
+    int currentFlags = pImpl ? pImpl->flags : 0;
     int newFlags = currentFlags | IFF_UP;
     return setFlags(newFlags);
   }
 
   bool Interface::bringDown() {
-    int currentFlags = getFlags();
+    int currentFlags = pImpl ? pImpl->flags : 0;
     int newFlags = currentFlags & ~IFF_UP;
     return setFlags(newFlags);
   }
@@ -211,9 +211,6 @@ namespace libfreebsdnet::interface {
     return pImpl ? pImpl->index : 0;
   }
 
-  int Interface::getFlags() const {
-    return pImpl ? pImpl->flags : 0;
-  }
 
   bool Interface::isUp() const {
     return pImpl ? (pImpl->flags & IFF_UP) != 0 : false;
@@ -782,6 +779,112 @@ namespace libfreebsdnet::interface {
 
     close(sock);
     return true;
+  }
+
+  MediaInfo Interface::getMediaInfo() const {
+    MediaInfo info;
+    info.type = MediaType::UNKNOWN;
+    info.subtype = MediaSubtype::UNKNOWN;
+    info.isActive = false;
+
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+      return info;
+    }
+
+    struct ifmediareq ifmr;
+    std::memset(&ifmr, 0, sizeof(ifmr));
+    std::strncpy(ifmr.ifm_name, getName().c_str(), IFNAMSIZ - 1);
+
+    if (ioctl(sock, SIOCGIFMEDIA, &ifmr) < 0) {
+      close(sock);
+      return info;
+    }
+
+    close(sock);
+
+    // Media type
+    if (IFM_TYPE(ifmr.ifm_current) == IFM_ETHER) {
+      info.type = MediaType::ETHERNET;
+    }
+
+    // Media subtype
+    int subtype = IFM_SUBTYPE(ifmr.ifm_current);
+    switch (subtype) {
+      case IFM_10_T: info.subtype = MediaSubtype::ETHERNET_10_T; break;
+      case IFM_10_2: info.subtype = MediaSubtype::ETHERNET_10_2; break;
+      case IFM_10_5: info.subtype = MediaSubtype::ETHERNET_10_5; break;
+      case IFM_100_TX: info.subtype = MediaSubtype::ETHERNET_100_TX; break;
+      case IFM_100_FX: info.subtype = MediaSubtype::ETHERNET_100_FX; break;
+      case IFM_1000_T: info.subtype = MediaSubtype::ETHERNET_1000_T; break;
+      case IFM_1000_SX: info.subtype = MediaSubtype::ETHERNET_1000_SX; break;
+      case IFM_1000_LX: info.subtype = MediaSubtype::ETHERNET_1000_LX; break;
+      case IFM_10G_T: info.subtype = MediaSubtype::ETHERNET_10G_T; break;
+      case IFM_10G_SR: info.subtype = MediaSubtype::ETHERNET_10G_SR; break;
+      case IFM_10G_LR: info.subtype = MediaSubtype::ETHERNET_10G_LR; break;
+      case IFM_2500_T: info.subtype = MediaSubtype::ETHERNET_2500_T; break;
+      case IFM_5000_T: info.subtype = MediaSubtype::ETHERNET_5000_T; break;
+      default: info.subtype = MediaSubtype::UNKNOWN; break;
+    }
+
+    // Media options
+    if (ifmr.ifm_current & IFM_AUTO) {
+      info.options.push_back(MediaOption::AUTO_SELECT);
+    }
+    if (ifmr.ifm_current & IFM_FDX) {
+      info.options.push_back(MediaOption::FULL_DUPLEX);
+    } else if (ifmr.ifm_current & IFM_HDX) {
+      info.options.push_back(MediaOption::HALF_DUPLEX);
+    }
+
+    // Status
+    if (ifmr.ifm_status & IFM_AVALID) {
+      info.isActive = (ifmr.ifm_status & IFM_ACTIVE) != 0;
+    }
+
+    return info;
+  }
+
+  std::vector<Capability> Interface::getCapabilityList() const {
+    std::vector<Capability> caps;
+    uint32_t capFlags = getCapabilities();
+    
+    if (capFlags & IFCAP_RXCSUM) caps.push_back(Capability::RXCSUM);
+    if (capFlags & IFCAP_TXCSUM) caps.push_back(Capability::TXCSUM);
+    if (capFlags & IFCAP_VLAN_MTU) caps.push_back(Capability::VLAN_MTU);
+    if (capFlags & IFCAP_VLAN_HWTAGGING) caps.push_back(Capability::VLAN_HWTAGGING);
+    if (capFlags & IFCAP_VLAN_HWCSUM) caps.push_back(Capability::VLAN_HWCSUM);
+    if (capFlags & IFCAP_WOL_MAGIC) caps.push_back(Capability::WOL_MAGIC);
+    if (capFlags & IFCAP_LINKSTATE) caps.push_back(Capability::LINKSTATE);
+    if (capFlags & IFCAP_TSO4) caps.push_back(Capability::TSO4);
+    if (capFlags & IFCAP_TSO6) caps.push_back(Capability::TSO6);
+    if (capFlags & IFCAP_LRO) caps.push_back(Capability::LRO);
+
+    return caps;
+  }
+
+  std::vector<Flag> Interface::getFlags() const {
+    std::vector<Flag> flags;
+    int flagBits = pImpl ? pImpl->flags : 0;
+    
+    if (flagBits & IFF_UP) flags.push_back(Flag::UP);
+    if (flagBits & IFF_BROADCAST) flags.push_back(Flag::BROADCAST);
+    if (flagBits & IFF_DEBUG) flags.push_back(Flag::DEBUG);
+    if (flagBits & IFF_LOOPBACK) flags.push_back(Flag::LOOPBACK);
+    if (flagBits & IFF_POINTOPOINT) flags.push_back(Flag::POINTOPOINT);
+    if (flagBits & IFF_RUNNING) flags.push_back(Flag::RUNNING);
+    if (flagBits & IFF_NOARP) flags.push_back(Flag::NOARP);
+    if (flagBits & IFF_PROMISC) flags.push_back(Flag::PROMISC);
+    if (flagBits & IFF_ALLMULTI) flags.push_back(Flag::ALLMULTI);
+    if (flagBits & IFF_OACTIVE) flags.push_back(Flag::OACTIVE);
+    if (flagBits & IFF_SIMPLEX) flags.push_back(Flag::SIMPLEX);
+    if (flagBits & IFF_LINK0) flags.push_back(Flag::LINK0);
+    if (flagBits & IFF_LINK1) flags.push_back(Flag::LINK1);
+    if (flagBits & IFF_LINK2) flags.push_back(Flag::LINK2);
+    if (flagBits & IFF_MULTICAST) flags.push_back(Flag::MULTICAST);
+    if (flagBits & IFF_DRV_RUNNING) flags.push_back(Flag::DRV_RUNNING);
+
+    return flags;
   }
 
 } // namespace libfreebsdnet::interface

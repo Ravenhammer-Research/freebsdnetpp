@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <ifaddrs.h>
 #include <interface/vxlan.hpp>
+#include <jail.h>
 #include <net/if.h>
 #include <net/if_mib.h>
 #include <net/if_private.h>
@@ -194,6 +195,11 @@ namespace libfreebsdnet::interface {
   int VxlanInterface::getVnet() const {
     // VNET functionality not implemented yet
     return -1;
+  }
+
+  std::string VxlanInterface::getVnetJailName() const {
+    // VNET functionality not implemented yet
+    return "";
   }
 
   bool VxlanInterface::setVnet(int vnetId) {

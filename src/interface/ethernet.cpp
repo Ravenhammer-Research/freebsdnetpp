@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <ifaddrs.h>
 #include <interface/ethernet.hpp>
+#include <jail.h>
 #include <net/ethernet.h>
 #include <net/if.h>
 #include <net/if_dl.h>
@@ -26,6 +27,8 @@
 #include <sys/sysctl.h>
 #include <unistd.h>
 #include <vector>
+#include <sstream>
+#include <iomanip>
 
 namespace libfreebsdnet::interface {
 
@@ -50,7 +53,6 @@ namespace libfreebsdnet::interface {
   std::string EthernetInterface::getName() const { return Interface::getName(); }
   unsigned int EthernetInterface::getIndex() const { return Interface::getIndex(); }
   InterfaceType EthernetInterface::getType() const { return InterfaceType::ETHERNET; }
-  int EthernetInterface::getFlags() const { return Interface::getFlags(); }
   bool EthernetInterface::setFlags(int flags) { return Interface::setFlags(flags); }
   bool EthernetInterface::bringUp() { return Interface::bringUp(); }
   bool EthernetInterface::bringDown() { return Interface::bringDown(); }
@@ -189,6 +191,22 @@ namespace libfreebsdnet::interface {
     return ifr.ifr_jid;
   }
 
+  std::string EthernetInterface::getVnetJailName() const {
+    int vnetId = getVnet();
+    if (vnetId < 0) {
+      return "";
+    }
+
+    char *jailName = jail_getname(vnetId);
+    if (jailName != nullptr) {
+      std::string result(jailName);
+      free(jailName);
+      return result;
+    }
+
+    return "";
+  }
+
   bool EthernetInterface::setVnet(int vnetId) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
@@ -274,5 +292,18 @@ namespace libfreebsdnet::interface {
     close(sock);
     return true;
   }
+
+  MediaInfo EthernetInterface::getMediaInfo() const {
+    return Interface::getMediaInfo();
+  }
+
+  std::vector<Capability> EthernetInterface::getCapabilityList() const {
+    return Interface::getCapabilityList();
+  }
+
+  std::vector<Flag> EthernetInterface::getFlags() const {
+    return Interface::getFlags();
+  }
+
 
 } // namespace libfreebsdnet::interface

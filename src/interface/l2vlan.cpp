@@ -55,7 +55,7 @@ namespace libfreebsdnet::interface {
   // Base class method implementations
   std::string L2VlanInterface::getName() const { return Interface::getName(); }
   unsigned int L2VlanInterface::getIndex() const { return Interface::getIndex(); }
-  int L2VlanInterface::getFlags() const { return Interface::getFlags(); }
+  std::vector<Flag> L2VlanInterface::getFlags() const { return Interface::getFlags(); }
   bool L2VlanInterface::setFlags(int flags) { return Interface::setFlags(flags); }
   std::string L2VlanInterface::getLastError() const { return Interface::getLastError(); }
 

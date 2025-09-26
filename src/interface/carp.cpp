@@ -51,7 +51,7 @@ namespace libfreebsdnet::interface {
   std::string CarpInterface::getName() const { return Interface::getName(); }
   unsigned int CarpInterface::getIndex() const { return Interface::getIndex(); }
   InterfaceType CarpInterface::getType() const { return InterfaceType::CARP; }
-  int CarpInterface::getFlags() const { return Interface::getFlags(); }
+  std::vector<Flag> CarpInterface::getFlags() const { return Interface::getFlags(); }
   bool CarpInterface::setFlags(int flags) { return Interface::setFlags(flags); }
   bool CarpInterface::bringUp() { return Interface::bringUp(); }
   bool CarpInterface::bringDown() { return Interface::bringDown(); }

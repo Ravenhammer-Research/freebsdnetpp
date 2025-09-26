@@ -119,9 +119,6 @@ namespace libfreebsdnet::interface {
 
     bool destroy() override;
 
-  private:
-    class Impl;
-    std::unique_ptr<Impl> pImpl;
   };
 
 } // namespace libfreebsdnet::interface

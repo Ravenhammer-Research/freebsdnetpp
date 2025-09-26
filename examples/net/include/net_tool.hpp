@@ -110,6 +110,8 @@ namespace net {
     bool handleShowInterfaceType(const std::vector<std::string> &args);
     bool handleShowInterfaceTypeBridge(const std::vector<std::string> &args);
     bool handleShowInterfaceTypeLagg(const std::vector<std::string> &args);
+    bool handleShowInterfaceTypeGif(const std::vector<std::string> &args);
+    bool handleShowInterfaceTypeEthernet(const std::vector<std::string> &args);
     bool handleSetInterface(const std::vector<std::string> &args);
     bool handleDeleteInterface(const std::vector<std::string> &args);
     bool handleShowRoute(const std::vector<std::string> &args);

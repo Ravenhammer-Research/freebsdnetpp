@@ -32,6 +32,12 @@ namespace libfreebsdnet::interface {
     virtual int getVnet() const = 0;
 
     /**
+     * @brief Get VNET jail name
+     * @return Jail name if in a VNET, empty string if not in a VNET or jail not found
+     */
+    virtual std::string getVnetJailName() const = 0;
+
+    /**
      * @brief Set VNET ID
      * @param vnetId VNET ID to assign
      * @return true on success, false on failure

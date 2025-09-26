@@ -19,6 +19,7 @@
 #include <interface/wireless.hpp>
 #include <interface/epair.hpp>
 #include <interface/loopback.hpp>
+#include <interface/gif.hpp>
 #include <net/if.h>
 #include <net/if_dl.h>
 #include <net/if_types.h>
@@ -76,6 +77,8 @@ namespace libfreebsdnet::interface {
             interface = std::make_unique<BridgeInterface>(ifa->ifa_name, index, ifr.ifr_flags);
           } else if (name.substr(0, 4) == "lagg") {
             interface = std::make_unique<LagInterface>(ifa->ifa_name, index, ifr.ifr_flags);
+          } else if (name.substr(0, 3) == "gif") {
+            interface = std::make_unique<GifInterface>(ifa->ifa_name, index, ifr.ifr_flags);
           } else if (name.substr(0, 2) == "lo") {
             interface = std::make_unique<LoopbackInterface>(ifa->ifa_name, index, ifr.ifr_flags);
           } else if (name.substr(0, 5) == "epair") {
@@ -134,6 +137,8 @@ namespace libfreebsdnet::interface {
               interface = std::make_unique<BridgeInterface>(ifa->ifa_name, index, ifr.ifr_flags);
             } else if (if_name.substr(0, 4) == "lagg") {
               interface = std::make_unique<LagInterface>(ifa->ifa_name, index, ifr.ifr_flags);
+            } else if (if_name.substr(0, 3) == "gif") {
+              interface = std::make_unique<GifInterface>(ifa->ifa_name, index, ifr.ifr_flags);
             } else if (if_name.substr(0, 2) == "lo") {
               interface = std::make_unique<LoopbackInterface>(ifa->ifa_name, index, ifr.ifr_flags);
             } else if (if_name.substr(0, 5) == "epair") {
@@ -330,6 +335,8 @@ namespace libfreebsdnet::interface {
       return std::make_unique<EpairInterface>(name, index, flags);
     case InterfaceType::LOOPBACK:
       return std::make_unique<LoopbackInterface>(name, index, flags);
+    case InterfaceType::GIF:
+      return std::make_unique<GifInterface>(name, index, flags);
     default:
       return nullptr;
     }
@@ -341,6 +348,7 @@ namespace libfreebsdnet::interface {
     case InterfaceType::BRIDGE:
     case InterfaceType::VLAN:
     case InterfaceType::LAGG:
+    case InterfaceType::GIF:
     case InterfaceType::PFSYNC:
     case InterfaceType::PFLOG:
     case InterfaceType::CARP:
@@ -360,6 +368,7 @@ namespace libfreebsdnet::interface {
       InterfaceType::BRIDGE,
       InterfaceType::VLAN,
       InterfaceType::LAGG,
+      InterfaceType::GIF,
       InterfaceType::PFSYNC,
       InterfaceType::PFLOG,
       InterfaceType::CARP,
