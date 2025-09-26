@@ -44,60 +44,37 @@ namespace libfreebsdnet::interface {
 
   VlanInterface::~VlanInterface() = default;
 
-  std::string VlanInterface::getName() const { return pImpl->name; }
+  std::string VlanInterface::getName() const { return Interface::getName(); }
 
-  unsigned int VlanInterface::getIndex() const { return pImpl->index; }
+  unsigned int VlanInterface::getIndex() const { return Interface::getIndex(); }
 
   InterfaceType VlanInterface::getType() const { return InterfaceType::VLAN; }
 
-  int VlanInterface::getFlags() const { return pImpl->flags; }
+  int VlanInterface::getFlags() const { return Interface::getFlags(); }
 
   bool VlanInterface::setFlags(int flags) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_flags = flags;
-
-    if (ioctl(sock, SIOCSIFFLAGS, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to set interface flags: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    pImpl->flags = flags;
-    close(sock);
-    return true;
+    return Interface::setFlags(flags);
   }
 
   bool VlanInterface::bringUp() {
-    int newFlags = pImpl->flags | IFF_UP;
-    return setFlags(newFlags);
+    return Interface::bringUp();
   }
 
   bool VlanInterface::bringDown() {
-    int newFlags = pImpl->flags & ~IFF_UP;
-    return setFlags(newFlags);
+    return Interface::bringDown();
   }
 
-  bool VlanInterface::isUp() const { return (pImpl->flags & IFF_UP) != 0; }
+  bool VlanInterface::isUp() const { return Interface::isUp(); }
 
   int VlanInterface::getMtu() const {
-    return 1500; // Default MTU
+    return Interface::getMtu();
   }
 
   bool VlanInterface::setMtu(int mtu) {
-    (void)mtu;   // Suppress unused parameter warning
-    return true; // Stub implementation
+    return Interface::setMtu(mtu);
   }
 
-  std::string VlanInterface::getLastError() const { return pImpl->lastError; }
+  std::string VlanInterface::getLastError() const { return Interface::getLastError(); }
 
   int VlanInterface::getVlanId() const {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -209,228 +186,63 @@ namespace libfreebsdnet::interface {
   }
 
   int VlanInterface::getFib() const {
-    // Get FIB assignment using the correct FreeBSD ioctl (like ifconfig does)
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return 0; // Default FIB
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    int fib = 0;
-    if (ioctl(sock, SIOCGIFFIB, &ifr) == 0) {
-      fib = ifr.ifr_fib;
-    }
-
-    close(sock);
-    return fib;
+    return Interface::getFib();
   }
 
   bool VlanInterface::setFib(int fib) {
-    // Set FIB assignment using the correct FreeBSD ioctl (like ifconfig does)
-    // Try AF_INET first, fall back to AF_LOCAL if that fails
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0 && errno == EAFNOSUPPORT) {
-      sock = socket(AF_LOCAL, SOCK_DGRAM, 0);
-    }
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket: " + std::string(strerror(errno));
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_fib = fib;
-
-    if (ioctl(sock, SIOCSIFFIB, &ifr) < 0) {
-      pImpl->lastError = "Failed to set FIB: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::setFib(fib);
   }
 
   int VlanInterface::getMedia() const {
-    // VLAN interfaces inherit media from parent interface
-    return -1;
+    return Interface::getMedia();
   }
 
   bool VlanInterface::setMedia(int media) {
-    (void)media; // Suppress unused parameter warning
-    pImpl->lastError = "VLAN interfaces inherit media from parent interface";
-    return false;
+    return Interface::setMedia(media);
   }
 
   int VlanInterface::getMediaStatus() const {
-    // VLAN interfaces inherit media from parent interface
-    return -1;
+    return Interface::getMediaStatus();
   }
 
   int VlanInterface::getActiveMedia() const {
-    // VLAN interfaces inherit media from parent interface
-    return -1;
+    return Interface::getActiveMedia();
   }
 
   std::vector<int> VlanInterface::getSupportedMedia() const {
-    // VLAN interfaces inherit media from parent interface
-    return {};
+    return Interface::getSupportedMedia();
   }
 
   uint32_t VlanInterface::getCapabilities() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return 0;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGIFCAP, &ifr) < 0) {
-      close(sock);
-      return 0;
-    }
-
-    close(sock);
-    return ifr.ifr_reqcap;
+    return Interface::getCapabilities();
   }
 
   bool VlanInterface::setCapabilities(uint32_t capabilities) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_reqcap = capabilities;
-
-    if (ioctl(sock, SIOCSIFCAP, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to set capabilities: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::setCapabilities(capabilities);
   }
 
   uint32_t VlanInterface::getEnabledCapabilities() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return 0;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGIFCAP, &ifr) < 0) {
-      close(sock);
-      return 0;
-    }
-
-    close(sock);
-    return ifr.ifr_curcap;
+    return Interface::getEnabledCapabilities();
   }
 
   bool VlanInterface::enableCapabilities(uint32_t capabilities) {
-    uint32_t current = getEnabledCapabilities();
-    return setCapabilities(current | capabilities);
+    return Interface::enableCapabilities(capabilities);
   }
 
   bool VlanInterface::disableCapabilities(uint32_t capabilities) {
-    uint32_t current = getEnabledCapabilities();
-    return setCapabilities(current & ~capabilities);
+    return Interface::disableCapabilities(capabilities);
   }
 
   std::vector<std::string> VlanInterface::getGroups() const {
-    std::vector<std::string> groups;
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return groups;
-    }
-
-    struct ifgroupreq ifgr;
-    std::memset(&ifgr, 0, sizeof(ifgr));
-    std::strncpy(ifgr.ifgr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    // First get the size
-    if (ioctl(sock, SIOCGIFGROUP, &ifgr) < 0) {
-      close(sock);
-      return groups;
-    }
-
-    if (ifgr.ifgr_len > 0) {
-      // Allocate buffer for groups
-      std::vector<char> buffer(ifgr.ifgr_len);
-      ifgr.ifgr_groups = reinterpret_cast<struct ifg_req *>(buffer.data());
-
-      // Get the groups
-      if (ioctl(sock, SIOCGIFGROUP, &ifgr) == 0) {
-        int numGroups = ifgr.ifgr_len / sizeof(struct ifg_req);
-        for (int i = 0; i < numGroups; i++) {
-          groups.push_back(std::string(ifgr.ifgr_groups[i].ifgrq_group));
-        }
-      }
-    }
-
-    close(sock);
-    return groups;
+    return Interface::getGroups();
   }
 
   bool VlanInterface::addToGroup(const std::string &groupName) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifgroupreq ifgr;
-    std::memset(&ifgr, 0, sizeof(ifgr));
-    std::strncpy(ifgr.ifgr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    std::strncpy(ifgr.ifgr_group, groupName.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCAIFGROUP, &ifgr) < 0) {
-      pImpl->lastError =
-          "Failed to add to group: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::addToGroup(groupName);
   }
 
   bool VlanInterface::removeFromGroup(const std::string &groupName) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifgroupreq ifgr;
-    std::memset(&ifgr, 0, sizeof(ifgr));
-    std::strncpy(ifgr.ifgr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    std::strncpy(ifgr.ifgr_group, groupName.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCDIFGROUP, &ifgr) < 0) {
-      pImpl->lastError =
-          "Failed to remove from group: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::removeFromGroup(groupName);
   }
 
   int VlanInterface::getVnet() const {
@@ -677,47 +489,6 @@ namespace libfreebsdnet::interface {
     return true;
   }
 
-  int VlanInterface::getTunnelFib() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return -1;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGTUNFIB, &ifr) < 0) {
-      close(sock);
-      return -1;
-    }
-
-    close(sock);
-    return ifr.ifr_fib;
-  }
-
-  bool VlanInterface::setTunnelFib(int fib) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_fib = fib;
-
-    if (ioctl(sock, SIOCSTUNFIB, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to set tunnel FIB: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
-  }
 
   bool VlanInterface::destroy() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);

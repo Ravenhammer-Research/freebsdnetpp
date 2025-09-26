@@ -11,7 +11,6 @@
 #define NET_TOOL_HPP
 
 #include <functional>
-#include <interface/factory.hpp>
 #include <interface/manager.hpp>
 #include <map>
 #include <memory>
@@ -109,6 +108,8 @@ namespace net {
     bool handleShowInterfaces(const std::vector<std::string> &args);
     bool handleShowInterfaceInfo(const std::vector<std::string> &args);
     bool handleShowInterfaceType(const std::vector<std::string> &args);
+    bool handleShowInterfaceTypeBridge(const std::vector<std::string> &args);
+    bool handleShowInterfaceTypeLagg(const std::vector<std::string> &args);
     bool handleSetInterface(const std::vector<std::string> &args);
     bool handleDeleteInterface(const std::vector<std::string> &args);
     bool handleShowRoute(const std::vector<std::string> &args);

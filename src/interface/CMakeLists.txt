@@ -7,15 +7,21 @@ add_library(libfreebsdnet++_interface STATIC
     manager.cpp
     statistics.cpp
     base.cpp
-    factory.cpp
+    vnet.cpp
     ethernet.cpp
     bridge.cpp
     vlan.cpp
     tunnel.cpp
+    vxlan.cpp
+    gif.cpp
+    tun.cpp
+    tap.cpp
     lagg.cpp
     pfsync.cpp
     pflog.cpp
     carp.cpp
     l2vlan.cpp
     wireless.cpp
+    epair.cpp
+    loopback.cpp
 )

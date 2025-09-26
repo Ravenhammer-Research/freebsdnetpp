@@ -47,139 +47,22 @@ namespace libfreebsdnet::interface {
 
   CarpInterface::~CarpInterface() = default;
 
-  std::string CarpInterface::getName() const { return pImpl->name; }
-
-  unsigned int CarpInterface::getIndex() const { return pImpl->index; }
-
+  // Base class method implementations
+  std::string CarpInterface::getName() const { return Interface::getName(); }
+  unsigned int CarpInterface::getIndex() const { return Interface::getIndex(); }
   InterfaceType CarpInterface::getType() const { return InterfaceType::CARP; }
+  int CarpInterface::getFlags() const { return Interface::getFlags(); }
+  bool CarpInterface::setFlags(int flags) { return Interface::setFlags(flags); }
+  bool CarpInterface::bringUp() { return Interface::bringUp(); }
+  bool CarpInterface::bringDown() { return Interface::bringDown(); }
+  bool CarpInterface::isUp() const { return Interface::isUp(); }
 
-  int CarpInterface::getFlags() const { return pImpl->flags; }
+  int CarpInterface::getMtu() const { return Interface::getMtu(); }
+  bool CarpInterface::setMtu(int mtu) { return Interface::setMtu(mtu); }
+  std::string CarpInterface::getLastError() const { return Interface::getLastError(); }
 
-  bool CarpInterface::setFlags(int flags) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_flags = flags;
-
-    if (ioctl(sock, SIOCSIFFLAGS, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to set interface flags: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    pImpl->flags = flags;
-    close(sock);
-    return true;
-  }
-
-  bool CarpInterface::bringUp() {
-    int newFlags = pImpl->flags | IFF_UP;
-    return setFlags(newFlags);
-  }
-
-  bool CarpInterface::bringDown() {
-    int newFlags = pImpl->flags & ~IFF_UP;
-    return setFlags(newFlags);
-  }
-
-  bool CarpInterface::isUp() const { return (pImpl->flags & IFF_UP) != 0; }
-
-  int CarpInterface::getMtu() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return -1;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGIFMTU, &ifr) < 0) {
-      close(sock);
-      return -1;
-    }
-
-    close(sock);
-    return ifr.ifr_mtu;
-  }
-
-  bool CarpInterface::setMtu(int mtu) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_mtu = mtu;
-
-    if (ioctl(sock, SIOCSIFMTU, &ifr) < 0) {
-      pImpl->lastError = "Failed to set MTU: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
-  }
-
-  std::string CarpInterface::getLastError() const { return pImpl->lastError; }
-
-  int CarpInterface::getFib() const {
-    // Get FIB assignment using the correct FreeBSD ioctl (like ifconfig does)
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return 0; // Default FIB
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    int fib = 0;
-    if (ioctl(sock, SIOCGIFFIB, &ifr) == 0) {
-      fib = ifr.ifr_fib;
-    }
-
-    close(sock);
-    return fib;
-  }
-
-  bool CarpInterface::setFib(int fib) {
-    // Set FIB assignment using the correct FreeBSD ioctl (like ifconfig does)
-    // Try AF_INET first, fall back to AF_LOCAL if that fails
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0 && errno == EAFNOSUPPORT) {
-      sock = socket(AF_LOCAL, SOCK_DGRAM, 0);
-    }
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket: " + std::string(strerror(errno));
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_fib = fib;
-
-    if (ioctl(sock, SIOCSIFFIB, &ifr) < 0) {
-      pImpl->lastError = "Failed to set FIB: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
-  }
+  int CarpInterface::getFib() const { return Interface::getFib(); }
+  bool CarpInterface::setFib(int fib) { return Interface::setFib(fib); }
 
   int CarpInterface::getVhid() const {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -565,148 +448,17 @@ namespace libfreebsdnet::interface {
   }
 
   std::vector<std::string> CarpInterface::getGroups() const {
-    std::vector<std::string> groups;
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return groups;
-    }
-
-    struct ifgroupreq ifgr;
-    std::memset(&ifgr, 0, sizeof(ifgr));
-    std::strncpy(ifgr.ifgr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    // First get the size
-    if (ioctl(sock, SIOCGIFGROUP, &ifgr) < 0) {
-      close(sock);
-      return groups;
-    }
-
-    if (ifgr.ifgr_len > 0) {
-      // Allocate buffer for groups
-      std::vector<char> buffer(ifgr.ifgr_len);
-      ifgr.ifgr_groups = reinterpret_cast<struct ifg_req *>(buffer.data());
-
-      // Get the groups
-      if (ioctl(sock, SIOCGIFGROUP, &ifgr) == 0) {
-        int numGroups = ifgr.ifgr_len / sizeof(struct ifg_req);
-        for (int i = 0; i < numGroups; i++) {
-          groups.push_back(std::string(ifgr.ifgr_groups[i].ifgrq_group));
-        }
-      }
-    }
-
-    close(sock);
-    return groups;
+    return Interface::getGroups();
   }
 
   bool CarpInterface::addToGroup(const std::string &groupName) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifgroupreq ifgr;
-    std::memset(&ifgr, 0, sizeof(ifgr));
-    std::strncpy(ifgr.ifgr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    std::strncpy(ifgr.ifgr_group, groupName.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCAIFGROUP, &ifgr) < 0) {
-      pImpl->lastError =
-          "Failed to add to group: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::addToGroup(groupName);
   }
 
   bool CarpInterface::removeFromGroup(const std::string &groupName) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifgroupreq ifgr;
-    std::memset(&ifgr, 0, sizeof(ifgr));
-    std::strncpy(ifgr.ifgr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    std::strncpy(ifgr.ifgr_group, groupName.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCDIFGROUP, &ifgr) < 0) {
-      pImpl->lastError =
-          "Failed to remove from group: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::removeFromGroup(groupName);
   }
 
-  int CarpInterface::getVnet() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return -1;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGIFFLAGS, &ifr) < 0) {
-      close(sock);
-      return -1;
-    }
-
-    close(sock);
-    return ifr.ifr_jid;
-  }
-
-  bool CarpInterface::setVnet(int vnetId) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_jid = vnetId;
-
-    if (ioctl(sock, SIOCSIFVNET, &ifr) < 0) {
-      pImpl->lastError = "Failed to set VNET: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
-  }
-
-  bool CarpInterface::reclaimFromVnet() {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCSIFRVNET, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to reclaim from VNET: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
-  }
 
   bool CarpInterface::setPhysicalAddress(const std::string &address) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -833,47 +585,6 @@ namespace libfreebsdnet::interface {
     return false;
   }
 
-  int CarpInterface::getTunnelFib() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return -1;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGTUNFIB, &ifr) < 0) {
-      close(sock);
-      return -1;
-    }
-
-    close(sock);
-    return ifr.ifr_fib;
-  }
-
-  bool CarpInterface::setTunnelFib(int fib) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_fib = fib;
-
-    if (ioctl(sock, SIOCSTUNFIB, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to set tunnel FIB: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
-  }
 
   bool CarpInterface::destroy() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -895,5 +606,6 @@ namespace libfreebsdnet::interface {
     close(sock);
     return true;
   }
+
 
 } // namespace libfreebsdnet::interface

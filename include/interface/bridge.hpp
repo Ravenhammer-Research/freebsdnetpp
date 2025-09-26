@@ -11,6 +11,7 @@
 #define LIBFREEBSDNET_INTERFACE_BRIDGE_HPP
 
 #include "base.hpp"
+#include "vnet.hpp"
 #include <string>
 #include <vector>
 
@@ -20,7 +21,7 @@ namespace libfreebsdnet::interface {
    * @brief Bridge interface class
    * @details Provides bridge-specific interface operations
    */
-  class BridgeInterface : public Interface {
+  class BridgeInterface : public Interface, public VnetInterface {
   public:
     /**
      * @brief Constructor
@@ -35,7 +36,7 @@ namespace libfreebsdnet::interface {
      */
     ~BridgeInterface() override;
 
-    // Interface base class methods
+    // Base class method overrides
     std::string getName() const override;
     unsigned int getIndex() const override;
     InterfaceType getType() const override;
@@ -47,6 +48,8 @@ namespace libfreebsdnet::interface {
     int getMtu() const override;
     bool setMtu(int mtu) override;
     std::string getLastError() const override;
+    int getFib() const override;
+    bool setFib(int fib) override;
 
     /**
      * @brief Add interface to bridge
@@ -119,9 +122,6 @@ namespace libfreebsdnet::interface {
      */
     int getAgingTime() const;
 
-    // Interface base class methods
-    int getFib() const override;
-    bool setFib(int fib) override;
     int getMedia() const override;
     bool setMedia(int media) override;
     int getMediaStatus() const override;
@@ -144,14 +144,9 @@ namespace libfreebsdnet::interface {
     std::vector<std::string> getCloners() const override;
     std::string getMacAddress() const override;
     bool setMacAddress(const std::string &macAddress) override;
-    int getTunnelFib() const override;
-    bool setTunnelFib(int fib) override;
 
     bool destroy() override;
 
-  private:
-    class Impl;
-    std::unique_ptr<Impl> pImpl;
   };
 
 } // namespace libfreebsdnet::interface

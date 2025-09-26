@@ -52,173 +52,22 @@ namespace libfreebsdnet::interface {
     return !pImpl->name.empty() && pImpl->index > 0;
   }
 
-  std::string L2VlanInterface::getName() const { return pImpl->name; }
+  // Base class method implementations
+  std::string L2VlanInterface::getName() const { return Interface::getName(); }
+  unsigned int L2VlanInterface::getIndex() const { return Interface::getIndex(); }
+  int L2VlanInterface::getFlags() const { return Interface::getFlags(); }
+  bool L2VlanInterface::setFlags(int flags) { return Interface::setFlags(flags); }
+  std::string L2VlanInterface::getLastError() const { return Interface::getLastError(); }
 
-  unsigned int L2VlanInterface::getIndex() const { return pImpl->index; }
+  bool L2VlanInterface::bringUp() { return Interface::bringUp(); }
+  bool L2VlanInterface::bringDown() { return Interface::bringDown(); }
+  bool L2VlanInterface::isUp() const { return Interface::isUp(); }
 
-  int L2VlanInterface::getFlags() const { return pImpl->flags; }
+  int L2VlanInterface::getMtu() const { return Interface::getMtu(); }
+  bool L2VlanInterface::setMtu(int mtu) { return Interface::setMtu(mtu); }
 
-  bool L2VlanInterface::setFlags(int flags) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_flags = flags;
-
-    if (ioctl(sock, SIOCSIFFLAGS, &ifr) < 0) {
-      pImpl->lastError = "Failed to set flags: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    pImpl->flags = flags;
-    close(sock);
-    return true;
-  }
-
-  std::string L2VlanInterface::getLastError() const { return pImpl->lastError; }
-
-  bool L2VlanInterface::bringUp() {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_flags = pImpl->flags | IFF_UP;
-
-    if (ioctl(sock, SIOCSIFFLAGS, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to bring up interface: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    pImpl->flags = ifr.ifr_flags;
-    close(sock);
-    return true;
-  }
-
-  bool L2VlanInterface::bringDown() {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_flags = pImpl->flags & ~IFF_UP;
-
-    if (ioctl(sock, SIOCSIFFLAGS, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to bring down interface: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    pImpl->flags = ifr.ifr_flags;
-    close(sock);
-    return true;
-  }
-
-  bool L2VlanInterface::isUp() const { return (pImpl->flags & IFF_UP) != 0; }
-
-  int L2VlanInterface::getMtu() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return -1;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGIFMTU, &ifr) < 0) {
-      close(sock);
-      return -1;
-    }
-
-    close(sock);
-    return ifr.ifr_mtu;
-  }
-
-  bool L2VlanInterface::setMtu(int mtu) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_mtu = mtu;
-
-    if (ioctl(sock, SIOCSIFMTU, &ifr) < 0) {
-      pImpl->lastError = "Failed to set MTU: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
-  }
-
-  int L2VlanInterface::getFib() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return -1;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGIFFIB, &ifr) < 0) {
-      close(sock);
-      return -1;
-    }
-
-    close(sock);
-    return ifr.ifr_fib;
-  }
-
-  bool L2VlanInterface::setFib(int fib) {
-    // Set FIB assignment using the correct FreeBSD ioctl (like ifconfig does)
-    // Try AF_INET first, fall back to AF_LOCAL if that fails
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0 && errno == EAFNOSUPPORT) {
-      sock = socket(AF_LOCAL, SOCK_DGRAM, 0);
-    }
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket: " + std::string(strerror(errno));
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_fib = fib;
-
-    if (ioctl(sock, SIOCSIFFIB, &ifr) < 0) {
-      pImpl->lastError = "Failed to set FIB: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
-  }
+  int L2VlanInterface::getFib() const { return Interface::getFib(); }
+  bool L2VlanInterface::setFib(int fib) { return Interface::setFib(fib); }
 
   int L2VlanInterface::getMedia() const {
     // L2VLAN interfaces typically don't have physical media
@@ -315,150 +164,17 @@ namespace libfreebsdnet::interface {
   }
 
   std::vector<std::string> L2VlanInterface::getGroups() const {
-    std::vector<std::string> groups;
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return groups;
-    }
-
-    struct ifgroupreq ifgr;
-    std::memset(&ifgr, 0, sizeof(ifgr));
-    std::strncpy(ifgr.ifgr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    // First get the size
-    if (ioctl(sock, SIOCGIFGROUP, &ifgr) < 0) {
-      close(sock);
-      return groups;
-    }
-
-    if (ifgr.ifgr_len > 0) {
-      // Allocate buffer and get groups
-      std::vector<char> buffer(ifgr.ifgr_len);
-      ifgr.ifgr_groups = reinterpret_cast<struct ifg_req *>(buffer.data());
-
-      if (ioctl(sock, SIOCGIFGROUP, &ifgr) == 0) {
-        struct ifg_req *ifg =
-            reinterpret_cast<struct ifg_req *>(ifgr.ifgr_groups);
-        for (size_t i = 0; i < ifgr.ifgr_len / sizeof(struct ifg_req); i++) {
-          if (ifg[i].ifgrq_member[0] != '\0') {
-            groups.push_back(std::string(ifg[i].ifgrq_member));
-          }
-        }
-      }
-    }
-
-    close(sock);
-    return groups;
+    return Interface::getGroups();
   }
 
   bool L2VlanInterface::addToGroup(const std::string &groupName) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifgroupreq ifgr;
-    std::memset(&ifgr, 0, sizeof(ifgr));
-    std::strncpy(ifgr.ifgr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    std::strncpy(ifgr.ifgr_group, groupName.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCAIFGROUP, &ifgr) < 0) {
-      pImpl->lastError =
-          "Failed to add to group: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::addToGroup(groupName);
   }
 
   bool L2VlanInterface::removeFromGroup(const std::string &groupName) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifgroupreq ifgr;
-    std::memset(&ifgr, 0, sizeof(ifgr));
-    std::strncpy(ifgr.ifgr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    std::strncpy(ifgr.ifgr_group, groupName.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCDIFGROUP, &ifgr) < 0) {
-      pImpl->lastError =
-          "Failed to remove from group: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::removeFromGroup(groupName);
   }
 
-  int L2VlanInterface::getVnet() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return -1;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGIFFLAGS, &ifr) < 0) {
-      close(sock);
-      return -1;
-    }
-
-    close(sock);
-    return ifr.ifr_jid;
-  }
-
-  bool L2VlanInterface::setVnet(int vnetId) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_jid = vnetId;
-
-    if (ioctl(sock, SIOCSIFVNET, &ifr) < 0) {
-      pImpl->lastError = "Failed to set VNET: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
-  }
-
-  bool L2VlanInterface::reclaimFromVnet() {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCSIFRVNET, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to reclaim from VNET: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
-  }
 
   bool L2VlanInterface::setPhysicalAddress(const std::string &address) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -643,47 +359,6 @@ namespace libfreebsdnet::interface {
     return true;
   }
 
-  int L2VlanInterface::getTunnelFib() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return -1;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGTUNFIB, &ifr) < 0) {
-      close(sock);
-      return -1;
-    }
-
-    close(sock);
-    return ifr.ifr_fib;
-  }
-
-  bool L2VlanInterface::setTunnelFib(int fib) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_fib = fib;
-
-    if (ioctl(sock, SIOCSTUNFIB, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to set tunnel FIB: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
-  }
 
   // L2VLAN-specific methods
   std::string L2VlanInterface::getTrunkDevice() const {
@@ -768,5 +443,6 @@ namespace libfreebsdnet::interface {
     close(sock);
     return true;
   }
+
 
 } // namespace libfreebsdnet::interface

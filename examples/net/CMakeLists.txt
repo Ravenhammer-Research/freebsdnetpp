@@ -14,6 +14,11 @@ set(NET_SOURCES
     src/main.cpp
     src/net_tool.cpp
     src/interface_commands.cpp
+    src/interface_show_commands.cpp
+    src/interface_show_bridge_commands.cpp
+    src/interface_show_lagg_commands.cpp
+    src/interface_set_commands.cpp
+    src/interface_delete_commands.cpp
     src/route_commands.cpp
     src/help.cpp
     src/utils.cpp

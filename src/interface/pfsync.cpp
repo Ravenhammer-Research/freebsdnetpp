@@ -46,94 +46,21 @@ namespace libfreebsdnet::interface {
 
   PfsyncInterface::~PfsyncInterface() = default;
 
-  std::string PfsyncInterface::getName() const { return pImpl->name; }
+  // Base class method implementations
+  std::string PfsyncInterface::getName() const { return Interface::getName(); }
+  unsigned int PfsyncInterface::getIndex() const { return Interface::getIndex(); }
+  InterfaceType PfsyncInterface::getType() const { return InterfaceType::PFSYNC; }
+  int PfsyncInterface::getFlags() const { return Interface::getFlags(); }
+  bool PfsyncInterface::setFlags(int flags) { return Interface::setFlags(flags); }
+  bool PfsyncInterface::bringUp() { return Interface::bringUp(); }
+  bool PfsyncInterface::bringDown() { return Interface::bringDown(); }
+  bool PfsyncInterface::isUp() const { return Interface::isUp(); }
 
-  unsigned int PfsyncInterface::getIndex() const { return pImpl->index; }
-
-  InterfaceType PfsyncInterface::getType() const {
-    return InterfaceType::PFSYNC;
-  }
-
-  int PfsyncInterface::getFlags() const { return pImpl->flags; }
-
-  bool PfsyncInterface::setFlags(int flags) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_flags = flags;
-
-    if (ioctl(sock, SIOCSIFFLAGS, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to set interface flags: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    pImpl->flags = flags;
-    close(sock);
-    return true;
-  }
-
-  bool PfsyncInterface::bringUp() {
-    int newFlags = pImpl->flags | IFF_UP;
-    return setFlags(newFlags);
-  }
-
-  bool PfsyncInterface::bringDown() {
-    int newFlags = pImpl->flags & ~IFF_UP;
-    return setFlags(newFlags);
-  }
-
-  bool PfsyncInterface::isUp() const { return (pImpl->flags & IFF_UP) != 0; }
-
-  int PfsyncInterface::getMtu() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return -1;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGIFMTU, &ifr) < 0) {
-      close(sock);
-      return -1;
-    }
-
-    close(sock);
-    return ifr.ifr_mtu;
-  }
-
-  bool PfsyncInterface::setMtu(int mtu) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_mtu = mtu;
-
-    if (ioctl(sock, SIOCSIFMTU, &ifr) < 0) {
-      pImpl->lastError = "Failed to set MTU: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
-  }
-
-  std::string PfsyncInterface::getLastError() const { return pImpl->lastError; }
+  int PfsyncInterface::getMtu() const { return Interface::getMtu(); }
+  bool PfsyncInterface::setMtu(int mtu) { return Interface::setMtu(mtu); }
+  std::string PfsyncInterface::getLastError() const { return Interface::getLastError(); }
+  int PfsyncInterface::getFib() const { return Interface::getFib(); }
+  bool PfsyncInterface::setFib(int fib) { return Interface::setFib(fib); }
 
   std::string PfsyncInterface::getSyncInterface() const {
     return pImpl->syncDevice;
@@ -208,293 +135,59 @@ namespace libfreebsdnet::interface {
     return true;
   }
 
-  int PfsyncInterface::getFib() const {
-    // Get FIB assignment using the correct FreeBSD ioctl (like ifconfig does)
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return 0; // Default FIB
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    int fib = 0;
-    if (ioctl(sock, SIOCGIFFIB, &ifr) == 0) {
-      fib = ifr.ifr_fib;
-    }
-
-    close(sock);
-    return fib;
-  }
-
-  bool PfsyncInterface::setFib(int fib) {
-    // Set FIB assignment using the correct FreeBSD ioctl (like ifconfig does)
-    // Try AF_INET first, fall back to AF_LOCAL if that fails
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0 && errno == EAFNOSUPPORT) {
-      sock = socket(AF_LOCAL, SOCK_DGRAM, 0);
-    }
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket: " + std::string(strerror(errno));
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_fib = fib;
-
-    if (ioctl(sock, SIOCSIFFIB, &ifr) < 0) {
-      pImpl->lastError = "Failed to set FIB: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
-  }
 
   int PfsyncInterface::getMedia() const {
-    // PFSYNC interfaces don't have media
-    return -1;
+    return Interface::getMedia();
   }
 
   bool PfsyncInterface::setMedia(int media) {
-    (void)media; // Suppress unused parameter warning
-    pImpl->lastError = "PFSYNC interfaces don't support media";
-    return false;
+    return Interface::setMedia(media);
   }
 
   int PfsyncInterface::getMediaStatus() const {
-    // PFSYNC interfaces don't have media
-    return -1;
+    return Interface::getMediaStatus();
   }
 
   int PfsyncInterface::getActiveMedia() const {
-    // PFSYNC interfaces don't have media
-    return -1;
+    return Interface::getActiveMedia();
   }
 
   std::vector<int> PfsyncInterface::getSupportedMedia() const {
-    // PFSYNC interfaces don't have media
-    return {};
+    return Interface::getSupportedMedia();
   }
 
   uint32_t PfsyncInterface::getCapabilities() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return 0;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGIFCAP, &ifr) < 0) {
-      close(sock);
-      return 0;
-    }
-
-    close(sock);
-    return ifr.ifr_reqcap;
+    return Interface::getCapabilities();
   }
 
   bool PfsyncInterface::setCapabilities(uint32_t capabilities) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_reqcap = capabilities;
-
-    if (ioctl(sock, SIOCSIFCAP, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to set capabilities: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::setCapabilities(capabilities);
   }
 
   uint32_t PfsyncInterface::getEnabledCapabilities() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return 0;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGIFCAP, &ifr) < 0) {
-      close(sock);
-      return 0;
-    }
-
-    close(sock);
-    return ifr.ifr_curcap;
+    return Interface::getEnabledCapabilities();
   }
 
   bool PfsyncInterface::enableCapabilities(uint32_t capabilities) {
-    uint32_t current = getEnabledCapabilities();
-    return setCapabilities(current | capabilities);
+    return Interface::enableCapabilities(capabilities);
   }
 
   bool PfsyncInterface::disableCapabilities(uint32_t capabilities) {
-    uint32_t current = getEnabledCapabilities();
-    return setCapabilities(current & ~capabilities);
+    return Interface::disableCapabilities(capabilities);
   }
 
   std::vector<std::string> PfsyncInterface::getGroups() const {
-    std::vector<std::string> groups;
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return groups;
-    }
-
-    struct ifgroupreq ifgr;
-    std::memset(&ifgr, 0, sizeof(ifgr));
-    std::strncpy(ifgr.ifgr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    // First get the size
-    if (ioctl(sock, SIOCGIFGROUP, &ifgr) < 0) {
-      close(sock);
-      return groups;
-    }
-
-    if (ifgr.ifgr_len > 0) {
-      // Allocate buffer for groups
-      std::vector<char> buffer(ifgr.ifgr_len);
-      ifgr.ifgr_groups = reinterpret_cast<struct ifg_req *>(buffer.data());
-
-      // Get the groups
-      if (ioctl(sock, SIOCGIFGROUP, &ifgr) == 0) {
-        int numGroups = ifgr.ifgr_len / sizeof(struct ifg_req);
-        for (int i = 0; i < numGroups; i++) {
-          groups.push_back(std::string(ifgr.ifgr_groups[i].ifgrq_group));
-        }
-      }
-    }
-
-    close(sock);
-    return groups;
+    return Interface::getGroups();
   }
 
   bool PfsyncInterface::addToGroup(const std::string &groupName) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifgroupreq ifgr;
-    std::memset(&ifgr, 0, sizeof(ifgr));
-    std::strncpy(ifgr.ifgr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    std::strncpy(ifgr.ifgr_group, groupName.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCAIFGROUP, &ifgr) < 0) {
-      pImpl->lastError =
-          "Failed to add to group: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::addToGroup(groupName);
   }
 
   bool PfsyncInterface::removeFromGroup(const std::string &groupName) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifgroupreq ifgr;
-    std::memset(&ifgr, 0, sizeof(ifgr));
-    std::strncpy(ifgr.ifgr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    std::strncpy(ifgr.ifgr_group, groupName.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCDIFGROUP, &ifgr) < 0) {
-      pImpl->lastError =
-          "Failed to remove from group: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::removeFromGroup(groupName);
   }
 
-  int PfsyncInterface::getVnet() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return -1;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGIFFLAGS, &ifr) < 0) {
-      close(sock);
-      return -1;
-    }
-
-    close(sock);
-    return ifr.ifr_jid;
-  }
-
-  bool PfsyncInterface::setVnet(int vnetId) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_jid = vnetId;
-
-    if (ioctl(sock, SIOCSIFVNET, &ifr) < 0) {
-      pImpl->lastError = "Failed to set VNET: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
-  }
-
-  bool PfsyncInterface::reclaimFromVnet() {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCSIFRVNET, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to reclaim from VNET: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
-  }
 
   bool PfsyncInterface::setPhysicalAddress(const std::string &address) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -621,47 +314,6 @@ namespace libfreebsdnet::interface {
     return false;
   }
 
-  int PfsyncInterface::getTunnelFib() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return -1;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGTUNFIB, &ifr) < 0) {
-      close(sock);
-      return -1;
-    }
-
-    close(sock);
-    return ifr.ifr_fib;
-  }
-
-  bool PfsyncInterface::setTunnelFib(int fib) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_fib = fib;
-
-    if (ioctl(sock, SIOCSTUNFIB, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to set tunnel FIB: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
-  }
 
   bool PfsyncInterface::destroy() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -683,5 +335,6 @@ namespace libfreebsdnet::interface {
     close(sock);
     return true;
   }
+
 
 } // namespace libfreebsdnet::interface

@@ -29,90 +29,65 @@
 
 namespace libfreebsdnet::interface {
 
-  class BridgeInterface::Impl {
-  public:
-    std::string name;
-    unsigned int index;
-    int flags;
-    std::string lastError;
-
-    Impl(const std::string &name, unsigned int index, int flags)
-        : name(name), index(index), flags(flags) {}
-  };
 
   BridgeInterface::BridgeInterface(const std::string &name, unsigned int index,
                                    int flags)
-      : pImpl(std::make_unique<Impl>(name, index, flags)) {}
+      : Interface(name, index, flags) {}
 
   BridgeInterface::~BridgeInterface() = default;
 
-  std::string BridgeInterface::getName() const { return pImpl->name; }
+  std::string BridgeInterface::getName() const { return Interface::getName(); }
 
-  unsigned int BridgeInterface::getIndex() const { return pImpl->index; }
+  unsigned int BridgeInterface::getIndex() const { return Interface::getIndex(); }
 
   InterfaceType BridgeInterface::getType() const {
     return InterfaceType::BRIDGE;
   }
 
-  int BridgeInterface::getFlags() const { return pImpl->flags; }
+  int BridgeInterface::getFlags() const { return Interface::getFlags(); }
 
   bool BridgeInterface::setFlags(int flags) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_flags = flags;
-
-    if (ioctl(sock, SIOCSIFFLAGS, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to set interface flags: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    pImpl->flags = flags;
-    close(sock);
-    return true;
+    return Interface::setFlags(flags);
   }
 
   bool BridgeInterface::bringUp() {
-    int newFlags = pImpl->flags | IFF_UP;
-    return setFlags(newFlags);
+    return Interface::bringUp();
   }
 
   bool BridgeInterface::bringDown() {
-    int newFlags = pImpl->flags & ~IFF_UP;
-    return setFlags(newFlags);
+    return Interface::bringDown();
   }
 
-  bool BridgeInterface::isUp() const { return (pImpl->flags & IFF_UP) != 0; }
+  bool BridgeInterface::isUp() const { return Interface::isUp(); }
 
   int BridgeInterface::getMtu() const {
-    return 1500; // Default MTU
+    return Interface::getMtu();
   }
 
   bool BridgeInterface::setMtu(int mtu) {
-    (void)mtu;   // Suppress unused parameter warning
-    return true; // Stub implementation
+    return Interface::setMtu(mtu);
   }
 
-  std::string BridgeInterface::getLastError() const { return pImpl->lastError; }
+  std::string BridgeInterface::getLastError() const { return Interface::getLastError(); }
+
+  int BridgeInterface::getFib() const {
+    return Interface::getFib();
+  }
+
+  bool BridgeInterface::setFib(int fib) {
+    return Interface::setFib(fib);
+  }
 
   bool BridgeInterface::addInterface(const std::string &interfaceName) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
+      // Use base class error handling
       return false;
     }
 
     struct ifdrv ifd;
     std::memset(&ifd, 0, sizeof(ifd));
-    std::strncpy(ifd.ifd_name, pImpl->name.c_str(), IFNAMSIZ - 1);
+    std::strncpy(ifd.ifd_name, getName().c_str(), IFNAMSIZ - 1);
     ifd.ifd_cmd = BRDGADD;
     ifd.ifd_len = sizeof(struct ifbreq);
 
@@ -135,13 +110,13 @@ namespace libfreebsdnet::interface {
   bool BridgeInterface::removeInterface(const std::string &interfaceName) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
+      // Use base class error handling
       return false;
     }
 
     struct ifdrv ifd;
     std::memset(&ifd, 0, sizeof(ifd));
-    std::strncpy(ifd.ifd_name, pImpl->name.c_str(), IFNAMSIZ - 1);
+    std::strncpy(ifd.ifd_name, getName().c_str(), IFNAMSIZ - 1);
     ifd.ifd_cmd = BRDGDEL;
     ifd.ifd_len = sizeof(struct ifbreq);
 
@@ -193,7 +168,7 @@ namespace libfreebsdnet::interface {
 
     struct ifdrv ifd;
     std::memset(&ifd, 0, sizeof(ifd));
-    std::strncpy(ifd.ifd_name, pImpl->name.c_str(), IFNAMSIZ - 1);
+    std::strncpy(ifd.ifd_name, getName().c_str(), IFNAMSIZ - 1);
     ifd.ifd_cmd = BRDGGIFFLGS;
     ifd.ifd_len = sizeof(struct ifbreq);
 
@@ -236,7 +211,7 @@ namespace libfreebsdnet::interface {
 
     struct ifdrv ifd;
     std::memset(&ifd, 0, sizeof(ifd));
-    std::strncpy(ifd.ifd_name, pImpl->name.c_str(), IFNAMSIZ - 1);
+    std::strncpy(ifd.ifd_name, getName().c_str(), IFNAMSIZ - 1);
     ifd.ifd_cmd = BRDGGTO;  // Get cache timeout
     ifd.ifd_len = sizeof(struct ifbrparam);
 
@@ -253,119 +228,33 @@ namespace libfreebsdnet::interface {
     return agingTime;
   }
 
-  int BridgeInterface::getFib() const {
-    // Get FIB assignment using the correct FreeBSD ioctl (like ifconfig does)
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return 0; // Default FIB
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    int fib = 0;
-    if (ioctl(sock, SIOCGIFFIB, &ifr) == 0) {
-      fib = ifr.ifr_fib;
-    }
-
-    close(sock);
-    return fib;
-  }
-
-  bool BridgeInterface::setFib(int fib) {
-    // Set FIB assignment using the correct FreeBSD ioctl (like ifconfig does)
-    // Try AF_INET first, fall back to AF_LOCAL if that fails
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0 && errno == EAFNOSUPPORT) {
-      sock = socket(AF_LOCAL, SOCK_DGRAM, 0);
-    }
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket: " + std::string(strerror(errno));
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_fib = fib;
-
-    if (ioctl(sock, SIOCSIFFIB, &ifr) < 0) {
-      pImpl->lastError = "Failed to set FIB: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
-  }
 
   int BridgeInterface::getMedia() const {
-    // Bridge interfaces don't have media
-    return -1;
+    return Interface::getMedia();
   }
 
   bool BridgeInterface::setMedia(int media) {
-    (void)media; // Suppress unused parameter warning
-    pImpl->lastError = "Bridge interfaces don't support media";
-    return false;
+    return Interface::setMedia(media);
   }
 
   int BridgeInterface::getMediaStatus() const {
-    // Bridge interfaces don't have media
-    return -1;
+    return Interface::getMediaStatus();
   }
 
   int BridgeInterface::getActiveMedia() const {
-    // Bridge interfaces don't have media
-    return -1;
+    return Interface::getActiveMedia();
   }
 
   std::vector<int> BridgeInterface::getSupportedMedia() const {
-    // Bridge interfaces don't have media
-    return {};
+    return Interface::getSupportedMedia();
   }
 
   uint32_t BridgeInterface::getCapabilities() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return 0;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGIFCAP, &ifr) < 0) {
-      close(sock);
-      return 0;
-    }
-
-    close(sock);
-    return ifr.ifr_reqcap;
+    return Interface::getCapabilities();
   }
 
   bool BridgeInterface::setCapabilities(uint32_t capabilities) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_reqcap = capabilities;
-
-    if (ioctl(sock, SIOCSIFCAP, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to set capabilities: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::setCapabilities(capabilities);
   }
 
   uint32_t BridgeInterface::getEnabledCapabilities() const {
@@ -376,7 +265,7 @@ namespace libfreebsdnet::interface {
 
     struct ifreq ifr;
     std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
+    std::strncpy(ifr.ifr_name, getName().c_str(), IFNAMSIZ - 1);
 
     if (ioctl(sock, SIOCGIFCAP, &ifr) < 0) {
       close(sock);
@@ -398,84 +287,15 @@ namespace libfreebsdnet::interface {
   }
 
   std::vector<std::string> BridgeInterface::getGroups() const {
-    std::vector<std::string> groups;
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return groups;
-    }
-
-    struct ifgroupreq ifgr;
-    std::memset(&ifgr, 0, sizeof(ifgr));
-    std::strncpy(ifgr.ifgr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    // First get the size
-    if (ioctl(sock, SIOCGIFGROUP, &ifgr) < 0) {
-      close(sock);
-      return groups;
-    }
-
-    if (ifgr.ifgr_len > 0) {
-      // Allocate buffer for groups
-      std::vector<char> buffer(ifgr.ifgr_len);
-      ifgr.ifgr_groups = reinterpret_cast<struct ifg_req *>(buffer.data());
-
-      // Get the groups
-      if (ioctl(sock, SIOCGIFGROUP, &ifgr) == 0) {
-        int numGroups = ifgr.ifgr_len / sizeof(struct ifg_req);
-        for (int i = 0; i < numGroups; i++) {
-          groups.push_back(std::string(ifgr.ifgr_groups[i].ifgrq_group));
-        }
-      }
-    }
-
-    close(sock);
-    return groups;
+    return Interface::getGroups();
   }
 
   bool BridgeInterface::addToGroup(const std::string &groupName) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifgroupreq ifgr;
-    std::memset(&ifgr, 0, sizeof(ifgr));
-    std::strncpy(ifgr.ifgr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    std::strncpy(ifgr.ifgr_group, groupName.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCAIFGROUP, &ifgr) < 0) {
-      pImpl->lastError =
-          "Failed to add to group: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::addToGroup(groupName);
   }
 
   bool BridgeInterface::removeFromGroup(const std::string &groupName) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifgroupreq ifgr;
-    std::memset(&ifgr, 0, sizeof(ifgr));
-    std::strncpy(ifgr.ifgr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    std::strncpy(ifgr.ifgr_group, groupName.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCDIFGROUP, &ifgr) < 0) {
-      pImpl->lastError =
-          "Failed to remove from group: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::removeFromGroup(groupName);
   }
 
   int BridgeInterface::getVnet() const {
@@ -486,7 +306,7 @@ namespace libfreebsdnet::interface {
 
     struct ifreq ifr;
     std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
+    std::strncpy(ifr.ifr_name, getName().c_str(), IFNAMSIZ - 1);
 
     if (ioctl(sock, SIOCGIFFLAGS, &ifr) < 0) {
       close(sock);
@@ -500,13 +320,13 @@ namespace libfreebsdnet::interface {
   bool BridgeInterface::setVnet(int vnetId) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
+      // Use base class error handling
       return false;
     }
 
     struct ifreq ifr;
     std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
+    std::strncpy(ifr.ifr_name, getName().c_str(), IFNAMSIZ - 1);
     ifr.ifr_jid = vnetId;
 
     if (ioctl(sock, SIOCSIFVNET, &ifr) < 0) {
@@ -522,13 +342,13 @@ namespace libfreebsdnet::interface {
   bool BridgeInterface::reclaimFromVnet() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
+      // Use base class error handling
       return false;
     }
 
     struct ifreq ifr;
     std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
+    std::strncpy(ifr.ifr_name, getName().c_str(), IFNAMSIZ - 1);
 
     if (ioctl(sock, SIOCSIFRVNET, &ifr) < 0) {
       pImpl->lastError =
@@ -544,7 +364,7 @@ namespace libfreebsdnet::interface {
   bool BridgeInterface::setPhysicalAddress(const std::string &address) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
+      // Use base class error handling
       return false;
     }
 
@@ -576,13 +396,13 @@ namespace libfreebsdnet::interface {
   bool BridgeInterface::deletePhysicalAddress() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
+      // Use base class error handling
       return false;
     }
 
     struct ifreq ifr;
     std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
+    std::strncpy(ifr.ifr_name, getName().c_str(), IFNAMSIZ - 1);
 
     if (ioctl(sock, SIOCDIFPHYADDR, &ifr) < 0) {
       pImpl->lastError =
@@ -598,7 +418,7 @@ namespace libfreebsdnet::interface {
   bool BridgeInterface::createClone(const std::string &cloneName) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
+      // Use base class error handling
       return false;
     }
 
@@ -688,13 +508,13 @@ namespace libfreebsdnet::interface {
   bool BridgeInterface::setMacAddress(const std::string &macAddress) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
+      // Use base class error handling
       return false;
     }
 
     struct ifreq ifr;
     std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
+    std::strncpy(ifr.ifr_name, getName().c_str(), IFNAMSIZ - 1);
 
     // Parse MAC address (format: "aa:bb:cc:dd:ee:ff")
     unsigned char mac[6];
@@ -722,47 +542,6 @@ namespace libfreebsdnet::interface {
     return true;
   }
 
-  int BridgeInterface::getTunnelFib() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return -1;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGTUNFIB, &ifr) < 0) {
-      close(sock);
-      return -1;
-    }
-
-    close(sock);
-    return ifr.ifr_fib;
-  }
-
-  bool BridgeInterface::setTunnelFib(int fib) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_fib = fib;
-
-    if (ioctl(sock, SIOCSTUNFIB, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to set tunnel FIB: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
-  }
 
   bool BridgeInterface::destroy() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -773,7 +552,7 @@ namespace libfreebsdnet::interface {
 
     struct ifreq ifr;
     std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
+    std::strncpy(ifr.ifr_name, getName().c_str(), IFNAMSIZ - 1);
 
     if (ioctl(sock, SIOCIFDESTROY, &ifr) < 0) {
       pImpl->lastError = "Failed to destroy interface: " + std::string(strerror(errno));

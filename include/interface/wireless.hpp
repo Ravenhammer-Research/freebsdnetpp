@@ -12,6 +12,7 @@
 
 #include <cstdint>
 #include <interface/base.hpp>
+#include <interface/vnet.hpp>
 #include <memory>
 #include <string>
 #include <vector>
@@ -22,28 +23,27 @@ namespace libfreebsdnet::interface {
    * @brief IEEE 802.11 wireless interface class
    * @details Provides management for IEEE 802.11 wireless network interfaces
    */
-  class WirelessInterface : public Interface {
+  class WirelessInterface : public Interface, public VnetInterface {
   public:
     WirelessInterface(const std::string &name, unsigned int index, int flags);
     ~WirelessInterface() override;
 
-    InterfaceType getType() const override;
-    bool isValid() const;
+    // Base class method overrides
     std::string getName() const override;
     unsigned int getIndex() const override;
+    InterfaceType getType() const override;
     int getFlags() const override;
     bool setFlags(int flags) override;
-    std::string getLastError() const override;
-
     bool bringUp() override;
     bool bringDown() override;
     bool isUp() const override;
     int getMtu() const override;
     bool setMtu(int mtu) override;
-
-    // FIB support
+    std::string getLastError() const override;
     int getFib() const override;
     bool setFib(int fib) override;
+
+    bool isValid() const;
 
     // Media support
     int getMedia() const override;
@@ -81,9 +81,6 @@ namespace libfreebsdnet::interface {
     std::string getMacAddress() const override;
     bool setMacAddress(const std::string &macAddress) override;
 
-    // Tunnel FIB support
-    int getTunnelFib() const override;
-    bool setTunnelFib(int fib) override;
 
     bool destroy() override;
 

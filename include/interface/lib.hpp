@@ -13,7 +13,6 @@
 #include <interface/base.hpp>
 #include <interface/bridge.hpp>
 #include <interface/ethernet.hpp>
-#include <interface/factory.hpp>
 #include <interface/lagg.hpp>
 #include <interface/manager.hpp>
 #include <interface/pflog.hpp>

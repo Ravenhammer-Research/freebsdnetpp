@@ -11,6 +11,7 @@
 #define LIBFREEBSDNET_INTERFACE_VLAN_HPP
 
 #include "base.hpp"
+#include "vnet.hpp"
 #include <string>
 
 namespace libfreebsdnet::interface {
@@ -19,7 +20,7 @@ namespace libfreebsdnet::interface {
    * @brief VLAN interface class
    * @details Provides VLAN-specific interface operations
    */
-  class VlanInterface : public Interface {
+  class VlanInterface : public Interface, public VnetInterface {
   public:
     /**
      * @brief Constructor
@@ -34,7 +35,7 @@ namespace libfreebsdnet::interface {
      */
     ~VlanInterface() override;
 
-    // Interface base class methods
+    // Base class method overrides
     std::string getName() const override;
     unsigned int getIndex() const override;
     InterfaceType getType() const override;
@@ -46,6 +47,8 @@ namespace libfreebsdnet::interface {
     int getMtu() const override;
     bool setMtu(int mtu) override;
     std::string getLastError() const override;
+    int getFib() const override;
+    bool setFib(int fib) override;
 
     /**
      * @brief Get VLAN ID
@@ -79,9 +82,6 @@ namespace libfreebsdnet::interface {
      */
     bool isValid() const;
 
-    // Interface base class methods
-    int getFib() const override;
-    bool setFib(int fib) override;
     int getMedia() const override;
     bool setMedia(int media) override;
     int getMediaStatus() const override;
@@ -104,8 +104,6 @@ namespace libfreebsdnet::interface {
     std::vector<std::string> getCloners() const override;
     std::string getMacAddress() const override;
     bool setMacAddress(const std::string &macAddress) override;
-    int getTunnelFib() const override;
-    bool setTunnelFib(int fib) override;
 
     bool destroy() override;
 

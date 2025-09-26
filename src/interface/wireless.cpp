@@ -54,432 +54,73 @@ namespace libfreebsdnet::interface {
 
   bool WirelessInterface::isValid() const { return !pImpl->name.empty(); }
 
-  std::string WirelessInterface::getName() const { return pImpl->name; }
+  // Base class method implementations
+  std::string WirelessInterface::getName() const { return Interface::getName(); }
+  unsigned int WirelessInterface::getIndex() const { return Interface::getIndex(); }
+  int WirelessInterface::getFlags() const { return Interface::getFlags(); }
+  bool WirelessInterface::setFlags(int flags) { return Interface::setFlags(flags); }
+  std::string WirelessInterface::getLastError() const { return Interface::getLastError(); }
 
-  unsigned int WirelessInterface::getIndex() const { return pImpl->index; }
+  bool WirelessInterface::bringUp() { return Interface::bringUp(); }
+  bool WirelessInterface::bringDown() { return Interface::bringDown(); }
+  bool WirelessInterface::isUp() const { return Interface::isUp(); }
 
-  int WirelessInterface::getFlags() const { return pImpl->flags; }
+  int WirelessInterface::getMtu() const { return Interface::getMtu(); }
+  bool WirelessInterface::setMtu(int mtu) { return Interface::setMtu(mtu); }
 
-  bool WirelessInterface::setFlags(int flags) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_flags = flags;
-
-    if (ioctl(sock, SIOCSIFFLAGS, &ifr) < 0) {
-      pImpl->lastError = "Failed to set flags: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    pImpl->flags = flags;
-    close(sock);
-    return true;
-  }
-
-  std::string WirelessInterface::getLastError() const {
-    return pImpl->lastError;
-  }
-
-  bool WirelessInterface::bringUp() {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_flags = pImpl->flags | IFF_UP;
-
-    if (ioctl(sock, SIOCSIFFLAGS, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to bring up interface: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    pImpl->flags = ifr.ifr_flags;
-    close(sock);
-    return true;
-  }
-
-  bool WirelessInterface::bringDown() {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_flags = pImpl->flags & ~IFF_UP;
-
-    if (ioctl(sock, SIOCSIFFLAGS, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to bring down interface: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    pImpl->flags = ifr.ifr_flags;
-    close(sock);
-    return true;
-  }
-
-  bool WirelessInterface::isUp() const { return (pImpl->flags & IFF_UP) != 0; }
-
-  int WirelessInterface::getMtu() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return -1;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGIFMTU, &ifr) < 0) {
-      close(sock);
-      return -1;
-    }
-
-    close(sock);
-    return ifr.ifr_mtu;
-  }
-
-  bool WirelessInterface::setMtu(int mtu) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_mtu = mtu;
-
-    if (ioctl(sock, SIOCSIFMTU, &ifr) < 0) {
-      pImpl->lastError = "Failed to set MTU: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
-  }
-
-  int WirelessInterface::getFib() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return -1;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGIFFIB, &ifr) < 0) {
-      close(sock);
-      return -1;
-    }
-
-    close(sock);
-    return ifr.ifr_fib;
-  }
-
-  bool WirelessInterface::setFib(int fib) {
-    // Set FIB assignment using the correct FreeBSD ioctl (like ifconfig does)
-    // Try AF_INET first, fall back to AF_LOCAL if that fails
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0 && errno == EAFNOSUPPORT) {
-      sock = socket(AF_LOCAL, SOCK_DGRAM, 0);
-    }
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket: " + std::string(strerror(errno));
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_fib = fib;
-
-    if (ioctl(sock, SIOCSIFFIB, &ifr) < 0) {
-      pImpl->lastError = "Failed to set FIB: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
-  }
+  int WirelessInterface::getFib() const { return Interface::getFib(); }
+  bool WirelessInterface::setFib(int fib) { return Interface::setFib(fib); }
 
   int WirelessInterface::getMedia() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return 0;
-    }
-
-    struct ifmediareq ifmr;
-    std::memset(&ifmr, 0, sizeof(ifmr));
-    std::strncpy(ifmr.ifm_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGIFMEDIA, &ifmr) < 0) {
-      close(sock);
-      return 0;
-    }
-
-    close(sock);
-    return ifmr.ifm_current;
+    return Interface::getMedia();
   }
 
   bool WirelessInterface::setMedia(int media) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_media = media;
-
-    if (ioctl(sock, SIOCSIFMEDIA, &ifr) < 0) {
-      pImpl->lastError = "Failed to set media: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::setMedia(media);
   }
 
   int WirelessInterface::getMediaStatus() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return 0;
-    }
-
-    struct ifmediareq ifmr;
-    std::memset(&ifmr, 0, sizeof(ifmr));
-    std::strncpy(ifmr.ifm_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGIFMEDIA, &ifmr) < 0) {
-      close(sock);
-      return 0;
-    }
-
-    close(sock);
-    return ifmr.ifm_status;
+    return Interface::getMediaStatus();
   }
 
   int WirelessInterface::getActiveMedia() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return 0;
-    }
-
-    struct ifmediareq ifmr;
-    std::memset(&ifmr, 0, sizeof(ifmr));
-    std::strncpy(ifmr.ifm_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGIFMEDIA, &ifmr) < 0) {
-      close(sock);
-      return 0;
-    }
-
-    close(sock);
-    return ifmr.ifm_active;
+    return Interface::getActiveMedia();
   }
 
   std::vector<int> WirelessInterface::getSupportedMedia() const {
-    std::vector<int> media;
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return media;
-    }
-
-    struct ifmediareq ifmr;
-    std::memset(&ifmr, 0, sizeof(ifmr));
-    std::strncpy(ifmr.ifm_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGIFMEDIA, &ifmr) < 0) {
-      close(sock);
-      return media;
-    }
-
-    if (ifmr.ifm_count > 0) {
-      std::vector<int> media_list(ifmr.ifm_count);
-      ifmr.ifm_ulist = media_list.data();
-
-      if (ioctl(sock, SIOCGIFMEDIA, &ifmr) == 0) {
-        media = media_list;
-      }
-    }
-
-    close(sock);
-    return media;
+    return Interface::getSupportedMedia();
   }
 
   uint32_t WirelessInterface::getCapabilities() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return 0;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGIFCAP, &ifr) < 0) {
-      close(sock);
-      return 0;
-    }
-
-    close(sock);
-    return ifr.ifr_curcap;
+    return Interface::getCapabilities();
   }
 
   bool WirelessInterface::setCapabilities(uint32_t capabilities) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_reqcap = capabilities;
-
-    if (ioctl(sock, SIOCSIFCAP, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to set capabilities: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::setCapabilities(capabilities);
   }
 
   uint32_t WirelessInterface::getEnabledCapabilities() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return 0;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGIFCAP, &ifr) < 0) {
-      close(sock);
-      return 0;
-    }
-
-    close(sock);
-    return ifr.ifr_curcap;
+    return Interface::getEnabledCapabilities();
   }
 
   bool WirelessInterface::enableCapabilities(uint32_t capabilities) {
-    return setCapabilities(getEnabledCapabilities() | capabilities);
+    return Interface::enableCapabilities(capabilities);
   }
 
   bool WirelessInterface::disableCapabilities(uint32_t capabilities) {
-    return setCapabilities(getEnabledCapabilities() & ~capabilities);
+    return Interface::disableCapabilities(capabilities);
   }
 
   std::vector<std::string> WirelessInterface::getGroups() const {
-    std::vector<std::string> groups;
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return groups;
-    }
-
-    struct ifgroupreq ifgr;
-    std::memset(&ifgr, 0, sizeof(ifgr));
-    std::strncpy(ifgr.ifgr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGIFGROUP, &ifgr) < 0) {
-      close(sock);
-      return groups;
-    }
-
-    if (ifgr.ifgr_len > 0) {
-      std::vector<char> buffer(ifgr.ifgr_len);
-      ifgr.ifgr_groups = reinterpret_cast<struct ifg_req *>(buffer.data());
-
-      if (ioctl(sock, SIOCGIFGROUP, &ifgr) == 0) {
-        struct ifg_req *ifg =
-            reinterpret_cast<struct ifg_req *>(ifgr.ifgr_groups);
-        for (size_t i = 0; i < ifgr.ifgr_len / sizeof(struct ifg_req); i++) {
-          if (ifg[i].ifgrq_member[0] != '\0') {
-            groups.push_back(std::string(ifg[i].ifgrq_member));
-          }
-        }
-      }
-    }
-
-    close(sock);
-    return groups;
+    return Interface::getGroups();
   }
 
   bool WirelessInterface::addToGroup(const std::string &groupName) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifgroupreq ifgr;
-    std::memset(&ifgr, 0, sizeof(ifgr));
-    std::strncpy(ifgr.ifgr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    std::strncpy(ifgr.ifgr_group, groupName.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCAIFGROUP, &ifgr) < 0) {
-      pImpl->lastError =
-          "Failed to add to group: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::addToGroup(groupName);
   }
 
   bool WirelessInterface::removeFromGroup(const std::string &groupName) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifgroupreq ifgr;
-    std::memset(&ifgr, 0, sizeof(ifgr));
-    std::strncpy(ifgr.ifgr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    std::strncpy(ifgr.ifgr_group, groupName.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCDIFGROUP, &ifgr) < 0) {
-      pImpl->lastError =
-          "Failed to remove from group: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::removeFromGroup(groupName);
   }
 
   int WirelessInterface::getVnet() const {
@@ -546,231 +187,29 @@ namespace libfreebsdnet::interface {
   }
 
   bool WirelessInterface::setPhysicalAddress(const std::string &address) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifaliasreq ifra;
-    std::memset(&ifra, 0, sizeof(ifra));
-    std::strncpy(ifra.ifra_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    struct sockaddr_in *sin =
-        reinterpret_cast<struct sockaddr_in *>(&ifra.ifra_addr);
-    if (inet_pton(AF_INET, address.c_str(), &sin->sin_addr) != 1) {
-      pImpl->lastError = "Invalid IP address format";
-      close(sock);
-      return false;
-    }
-
-    sin->sin_family = AF_INET;
-    sin->sin_len = sizeof(*sin);
-
-    if (ioctl(sock, SIOCSIFPHYADDR, &ifra) < 0) {
-      pImpl->lastError =
-          "Failed to set physical address: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::setPhysicalAddress(address);
   }
 
   bool WirelessInterface::deletePhysicalAddress() {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifaliasreq ifra;
-    std::memset(&ifra, 0, sizeof(ifra));
-    std::strncpy(ifra.ifra_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCDIFPHYADDR, &ifra) < 0) {
-      pImpl->lastError =
-          "Failed to delete physical address: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::deletePhysicalAddress();
   }
 
   bool WirelessInterface::createClone(const std::string &cloneName) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, cloneName.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCIFCREATE2, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to create clone: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::createClone(cloneName);
   }
 
   std::vector<std::string> WirelessInterface::getCloners() const {
-    std::vector<std::string> cloners;
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return cloners;
-    }
-
-    struct if_clonereq ifcr;
-    std::memset(&ifcr, 0, sizeof(ifcr));
-
-    if (ioctl(sock, SIOCIFGCLONERS, &ifcr) < 0) {
-      close(sock);
-      return cloners;
-    }
-
-    if (ifcr.ifcr_total > 0) {
-      std::vector<char> buffer(ifcr.ifcr_total * IFNAMSIZ);
-      ifcr.ifcr_count = ifcr.ifcr_total;
-      // Note: ifcr_buf is not available in this version, skip for now
-
-      if (ioctl(sock, SIOCIFGCLONERS, &ifcr) == 0) {
-        char *ptr = buffer.data();
-        for (int i = 0; i < ifcr.ifcr_count; i++) {
-          cloners.push_back(std::string(ptr));
-          ptr += IFNAMSIZ;
-        }
-      }
-    }
-
-    close(sock);
-    return cloners;
+    return Interface::getCloners();
   }
 
   std::string WirelessInterface::getMacAddress() const {
-    std::string macAddress = "";
-    struct ifaddrs *ifaddrs, *ifa;
-
-    if (getifaddrs(&ifaddrs) == -1) {
-      return macAddress;
-    }
-
-    for (ifa = ifaddrs; ifa != nullptr; ifa = ifa->ifa_next) {
-      if (ifa->ifa_addr == nullptr)
-        continue;
-
-      if (std::string(ifa->ifa_name) == pImpl->name &&
-          ifa->ifa_addr->sa_family == AF_LINK) {
-        struct sockaddr_dl *sdl =
-            reinterpret_cast<struct sockaddr_dl *>(ifa->ifa_addr);
-        if (sdl->sdl_alen == ETHER_ADDR_LEN) {
-          char mac_str[18];
-          std::snprintf(
-              mac_str, sizeof(mac_str), "%02x:%02x:%02x:%02x:%02x:%02x",
-              (unsigned char)LLADDR(sdl)[0], (unsigned char)LLADDR(sdl)[1],
-              (unsigned char)LLADDR(sdl)[2], (unsigned char)LLADDR(sdl)[3],
-              (unsigned char)LLADDR(sdl)[4], (unsigned char)LLADDR(sdl)[5]);
-          macAddress = mac_str;
-          break;
-        }
-      }
-    }
-
-    freeifaddrs(ifaddrs);
-    return macAddress;
+    return Interface::getMacAddress();
   }
 
   bool WirelessInterface::setMacAddress(const std::string &macAddress) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    unsigned char mac[ETHER_ADDR_LEN];
-    if (std::sscanf(macAddress.c_str(),
-                    "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx", &mac[0],
-                    &mac[1], &mac[2], &mac[3], &mac[4],
-                    &mac[5]) != ETHER_ADDR_LEN) {
-      pImpl->lastError = "Invalid MAC address format";
-      close(sock);
-      return false;
-    }
-
-    struct sockaddr_dl sdl;
-    std::memset(&sdl, 0, sizeof(sdl));
-    sdl.sdl_len = sizeof(sdl);
-    sdl.sdl_family = AF_LINK;
-    sdl.sdl_alen = ETHER_ADDR_LEN;
-    std::memcpy(LLADDR(&sdl), mac, ETHER_ADDR_LEN);
-
-    std::memcpy(&ifr.ifr_addr, &sdl,
-                std::min(sizeof(sdl), sizeof(ifr.ifr_addr)));
-
-    if (ioctl(sock, SIOCSIFLLADDR, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to set MAC address: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
+    return Interface::setMacAddress(macAddress);
   }
 
-  int WirelessInterface::getTunnelFib() const {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      return -1;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-
-    if (ioctl(sock, SIOCGTUNFIB, &ifr) < 0) {
-      close(sock);
-      return -1;
-    }
-
-    close(sock);
-    return ifr.ifr_fib;
-  }
-
-  bool WirelessInterface::setTunnelFib(int fib) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-      pImpl->lastError = "Failed to create socket";
-      return false;
-    }
-
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    ifr.ifr_fib = fib;
-
-    if (ioctl(sock, SIOCSTUNFIB, &ifr) < 0) {
-      pImpl->lastError =
-          "Failed to set tunnel FIB: " + std::string(strerror(errno));
-      close(sock);
-      return false;
-    }
-
-    close(sock);
-    return true;
-  }
 
   // IEEE 802.11-specific methods
   int WirelessInterface::getChannel() const {
@@ -1010,5 +449,6 @@ namespace libfreebsdnet::interface {
     close(sock);
     return true;
   }
+
 
 } // namespace libfreebsdnet::interface

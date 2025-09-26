@@ -50,30 +50,6 @@ namespace libfreebsdnet::interface {
      */
     ~TunnelInterface() override;
 
-    // Interface base class methods
-    std::string getName() const override;
-    unsigned int getIndex() const override;
-    InterfaceType getType() const override;
-    int getFlags() const override;
-    bool setFlags(int flags) override;
-    bool bringUp() override;
-    bool bringDown() override;
-    bool isUp() const override;
-    int getMtu() const override;
-    bool setMtu(int mtu) override;
-    std::string getLastError() const override;
-
-    /**
-     * @brief Get tunnel type
-     * @return Tunnel type
-     */
-    TunnelType getTunnelType() const;
-
-    /**
-     * @brief Get tunnel type string
-     * @return Tunnel type as string
-     */
-    std::string getTunnelTypeString() const;
 
     /**
      * @brief Get local endpoint address
@@ -120,9 +96,10 @@ namespace libfreebsdnet::interface {
      */
     bool isConfigured() const;
 
-    // Interface base class methods
-    int getFib() const override;
-    bool setFib(int fib) override;
+    int getTunnelFib() const;
+    bool setTunnelFib(int fib);
+
+    // Base class method overrides
     int getMedia() const override;
     bool setMedia(int media) override;
     int getMediaStatus() const override;
@@ -133,20 +110,12 @@ namespace libfreebsdnet::interface {
     uint32_t getEnabledCapabilities() const override;
     bool enableCapabilities(uint32_t capabilities) override;
     bool disableCapabilities(uint32_t capabilities) override;
-    std::vector<std::string> getGroups() const override;
-    bool addToGroup(const std::string &groupName) override;
-    bool removeFromGroup(const std::string &groupName) override;
-    int getVnet() const override;
-    bool setVnet(int vnetId) override;
-    bool reclaimFromVnet() override;
     bool setPhysicalAddress(const std::string &address) override;
     bool deletePhysicalAddress() override;
     bool createClone(const std::string &cloneName) override;
     std::vector<std::string> getCloners() const override;
     std::string getMacAddress() const override;
     bool setMacAddress(const std::string &macAddress) override;
-    int getTunnelFib() const override;
-    bool setTunnelFib(int fib) override;
 
     bool destroy() override;
 

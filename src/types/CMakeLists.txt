@@ -1,8 +1,13 @@
-# Include the same directories as the main project
-include_directories(${GLOBAL_PROJ_INCLUDE_DIR})
+# CMakeLists.txt for types module
 
-# Compile types sources to static library
 add_library(libfreebsdnet++_types STATIC
-    lib.cpp
-    manager.cpp
+  address.cpp
+)
+
+target_include_directories(libfreebsdnet++_types PUBLIC
+  ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(libfreebsdnet++_types PUBLIC
+  # No external dependencies for now
 )

@@ -15,6 +15,7 @@
 #include <net/if.h>
 #include <string>
 #include <vector>
+#include <types/address.hpp>
 
 namespace libfreebsdnet::interface {
 
@@ -59,82 +60,82 @@ namespace libfreebsdnet::interface {
      * @brief Get interface name
      * @return Interface name
      */
-    virtual std::string getName() const = 0;
+    virtual std::string getName() const;
 
     /**
      * @brief Get interface index
      * @return Interface index
      */
-    virtual unsigned int getIndex() const = 0;
+    virtual unsigned int getIndex() const;
 
     /**
      * @brief Get interface type
      * @return Interface type
      */
-    virtual InterfaceType getType() const = 0;
+    virtual InterfaceType getType() const;
 
     /**
      * @brief Get interface flags
      * @return Interface flags
      */
-    virtual int getFlags() const = 0;
+    virtual int getFlags() const;
 
     /**
      * @brief Set interface flags
      * @param flags New flags
      * @return true on success, false on error
      */
-    virtual bool setFlags(int flags) = 0;
+    virtual bool setFlags(int flags);
 
     /**
      * @brief Bring interface up
      * @return true on success, false on error
      */
-    virtual bool bringUp() = 0;
+    virtual bool bringUp();
 
     /**
      * @brief Bring interface down
      * @return true on success, false on error
      */
-    virtual bool bringDown() = 0;
+    virtual bool bringDown();
 
     /**
      * @brief Check if interface is up
      * @return true if interface is up, false otherwise
      */
-    virtual bool isUp() const = 0;
+    virtual bool isUp() const;
 
     /**
      * @brief Get interface MTU
      * @return Interface MTU or -1 on error
      */
-    virtual int getMtu() const = 0;
+    virtual int getMtu() const;
 
     /**
      * @brief Set interface MTU
      * @param mtu New MTU value
      * @return true on success, false on error
      */
-    virtual bool setMtu(int mtu) = 0;
+    virtual bool setMtu(int mtu);
 
     /**
      * @brief Get last error message
      * @return Error message from last operation
      */
-    virtual std::string getLastError() const = 0;
+    virtual std::string getLastError() const;
 
     /**
      * @brief Get FIB (Forwarding Information Base) assigned to this interface
      * @return FIB number or -1 if not assigned
      */
-    virtual int getFib() const = 0;
+    virtual int getFib() const;
 
     /**
      * @brief Set FIB (Forwarding Information Base) for this interface
      * @param fib FIB number to assign
      * @return true on success, false on error
      */
-    virtual bool setFib(int fib) = 0;
+    virtual bool setFib(int fib);
 
     /**
      * @brief Get current media options for this interface
@@ -220,24 +221,6 @@ namespace libfreebsdnet::interface {
      */
     virtual bool removeFromGroup(const std::string &groupName) = 0;
 
-    /**
-     * @brief Get VNET (Virtual Network) ID for this interface
-     * @return VNET ID or -1 if not assigned
-     */
-    virtual int getVnet() const = 0;
-
-    /**
-     * @brief Set VNET (Virtual Network) ID for this interface
-     * @param vnetId VNET ID to assign
-     * @return true on success, false on error
-     */
-    virtual bool setVnet(int vnetId) = 0;
-
-    /**
-     * @brief Reclaim interface from VNET
-     * @return true on success, false on error
-     */
-    virtual bool reclaimFromVnet() = 0;
 
     /**
      * @brief Set physical address for this interface
@@ -279,17 +262,59 @@ namespace libfreebsdnet::interface {
     virtual bool setMacAddress(const std::string &macAddress) = 0;
 
     /**
-     * @brief Get tunnel FIB for this interface
-     * @return Tunnel FIB number or -1 if not set
+     * @brief Get IP addresses for this interface
+     * @return Vector of Address objects
      */
-    virtual int getTunnelFib() const = 0;
+    virtual std::vector<libfreebsdnet::types::Address> getAddresses() const;
 
     /**
-     * @brief Set tunnel FIB for this interface
-     * @param fib Tunnel FIB number
+     * @brief Set IP address for this interface
+     * @param address Address object
      * @return true on success, false on error
      */
-    virtual bool setTunnelFib(int fib) = 0;
+    virtual bool setAddress(const libfreebsdnet::types::Address &address);
+
+    /**
+     * @brief Set IP address for this interface from string
+     * @param addressString IP address in CIDR notation (e.g., "192.168.1.1/24")
+     * @return true on success, false on error
+     */
+    virtual bool setAddress(const std::string &addressString);
+
+    /**
+     * @brief Set alias IP address for this interface
+     * @param address Address object
+     * @return true on success, false on error
+     */
+    virtual bool setAliasAddress(const libfreebsdnet::types::Address &address);
+
+    /**
+     * @brief Set alias IP address for this interface from string
+     * @param addressString IP address in CIDR notation (e.g., "192.168.1.1/24")
+     * @return true on success, false on error
+     */
+    virtual bool setAliasAddress(const std::string &addressString);
+
+    /**
+     * @brief Remove primary IP address from this interface
+     * @return true on success, false on error
+     */
+    virtual bool removeAddress();
+
+    /**
+     * @brief Remove alias IP address from this interface
+     * @param address Address object to remove
+     * @return true on success, false on error
+     */
+    virtual bool removeAliasAddress(const libfreebsdnet::types::Address &address);
+
+    /**
+     * @brief Remove alias IP address from this interface
+     * @param addressString IP address string to remove
+     * @return true on success, false on error
+     */
+    virtual bool removeAliasAddress(const std::string &addressString);
+
 
     /**
      * @brief Destroy this interface
@@ -298,9 +323,22 @@ namespace libfreebsdnet::interface {
     virtual bool destroy() = 0;
 
   protected:
+    struct Impl {
+      std::string name;
+      unsigned int index;
+      int flags;
+      std::string lastError;
+      
+      Impl(const std::string &name, unsigned int index, int flags)
+        : name(name), index(index), flags(flags) {}
+    };
+    
+    std::unique_ptr<Impl> pImpl;
     Interface() = default;
-    Interface(const Interface &) = default;
-    Interface &operator=(const Interface &) = default;
+    Interface(const std::string &name, unsigned int index, int flags)
+      : pImpl(std::make_unique<Impl>(name, index, flags)) {}
+    Interface(const Interface &) = delete;
+    Interface &operator=(const Interface &) = delete;
     Interface(Interface &&) = default;
     Interface &operator=(Interface &&) = default;
   };

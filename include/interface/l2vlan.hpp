@@ -37,11 +37,20 @@ namespace libfreebsdnet::interface {
      */
     ~L2VlanInterface() override;
 
-    /**
-     * @brief Get interface type
-     * @return Interface type
-     */
+    // Base class method overrides
+    std::string getName() const override;
+    unsigned int getIndex() const override;
     InterfaceType getType() const override;
+    int getFlags() const override;
+    bool setFlags(int flags) override;
+    bool bringUp() override;
+    bool bringDown() override;
+    bool isUp() const override;
+    int getMtu() const override;
+    bool setMtu(int mtu) override;
+    std::string getLastError() const override;
+    int getFib() const override;
+    bool setFib(int fib) override;
 
     /**
      * @brief Check if interface is valid
@@ -50,70 +59,21 @@ namespace libfreebsdnet::interface {
     bool isValid() const;
 
     /**
-     * @brief Get interface name
-     * @return Interface name
-     */
-    std::string getName() const override;
-
-    /**
-     * @brief Get interface index
-     * @return Interface index
-     */
-    unsigned int getIndex() const override;
-
-    /**
-     * @brief Get interface flags
-     * @return Interface flags
-     */
-    int getFlags() const override;
-
-    /**
      * @brief Set interface flags
      * @param flags New flags
      * @return true on success, false on error
      */
-    bool setFlags(int flags) override;
-
-    /**
-     * @brief Get last error message
-     * @return Last error message
-     */
-    std::string getLastError() const override;
-
-    /**
-     * @brief Bring interface up
-     * @return true on success, false on error
-     */
-    bool bringUp() override;
-
-    /**
-     * @brief Bring interface down
-     * @return true on success, false on error
-     */
-    bool bringDown() override;
 
     /**
      * @brief Check if interface is up
      * @return true if up, false otherwise
      */
-    bool isUp() const override;
-
-    /**
-     * @brief Get interface MTU
-     * @return MTU value
-     */
-    int getMtu() const override;
 
     /**
      * @brief Set interface MTU
      * @param mtu New MTU value
      * @return true on success, false on error
      */
-    bool setMtu(int mtu) override;
-
-    // FIB support
-    int getFib() const override;
-    bool setFib(int fib) override;
 
     // Media support
     int getMedia() const override;
@@ -135,9 +95,6 @@ namespace libfreebsdnet::interface {
     bool removeFromGroup(const std::string &groupName) override;
 
     // VNET support
-    int getVnet() const override;
-    bool setVnet(int vnetId) override;
-    bool reclaimFromVnet() override;
 
     // Physical address support
     bool setPhysicalAddress(const std::string &address) override;
@@ -150,10 +107,6 @@ namespace libfreebsdnet::interface {
     // MAC address support
     std::string getMacAddress() const override;
     bool setMacAddress(const std::string &macAddress) override;
-
-    // Tunnel FIB support
-    int getTunnelFib() const override;
-    bool setTunnelFib(int fib) override;
 
     bool destroy() override;
 

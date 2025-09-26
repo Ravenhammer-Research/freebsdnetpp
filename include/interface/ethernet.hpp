@@ -11,6 +11,7 @@
 #define LIBFREEBSDNET_INTERFACE_ETHERNET_HPP
 
 #include "base.hpp"
+#include "vnet.hpp"
 #include <ethernet/address.hpp>
 #include <vector>
 
@@ -20,7 +21,7 @@ namespace libfreebsdnet::interface {
    * @brief Ethernet interface class
    * @details Provides Ethernet-specific interface operations
    */
-  class EthernetInterface : public Interface {
+  class EthernetInterface : public Interface, public VnetInterface {
   public:
     /**
      * @brief Constructor
@@ -35,6 +36,7 @@ namespace libfreebsdnet::interface {
      */
     ~EthernetInterface() override;
 
+
     // Interface base class methods
     std::string getName() const override;
     unsigned int getIndex() const override;
@@ -47,6 +49,8 @@ namespace libfreebsdnet::interface {
     int getMtu() const override;
     bool setMtu(int mtu) override;
     std::string getLastError() const override;
+    int getFib() const override;
+    bool setFib(int fib) override;
 
     /**
      * @brief Get MAC address
@@ -91,9 +95,6 @@ namespace libfreebsdnet::interface {
      */
     bool isPromiscuousModeEnabled() const;
 
-    // Interface base class methods
-    int getFib() const override;
-    bool setFib(int fib) override;
     int getMedia() const override;
     bool setMedia(int media) override;
     int getMediaStatus() const override;
@@ -116,8 +117,6 @@ namespace libfreebsdnet::interface {
     std::vector<std::string> getCloners() const override;
     std::string getMacAddress() const override;
     bool setMacAddress(const std::string &macAddress) override;
-    int getTunnelFib() const override;
-    bool setTunnelFib(int fib) override;
 
     bool destroy() override;
 

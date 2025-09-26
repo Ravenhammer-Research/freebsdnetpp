@@ -34,7 +34,7 @@ namespace libfreebsdnet::interface {
      */
     ~PflogInterface() override;
 
-    // Interface base class methods
+    // Base class method overrides
     std::string getName() const override;
     unsigned int getIndex() const override;
     InterfaceType getType() const override;
@@ -46,6 +46,8 @@ namespace libfreebsdnet::interface {
     int getMtu() const override;
     bool setMtu(int mtu) override;
     std::string getLastError() const override;
+    int getFib() const override;
+    bool setFib(int fib) override;
 
     /**
      * @brief Get log interface
@@ -73,9 +75,6 @@ namespace libfreebsdnet::interface {
      */
     bool setLogRule(int ruleNumber);
 
-    // Interface base class methods
-    int getFib() const override;
-    bool setFib(int fib) override;
     int getMedia() const override;
     bool setMedia(int media) override;
     int getMediaStatus() const override;
@@ -89,17 +88,12 @@ namespace libfreebsdnet::interface {
     std::vector<std::string> getGroups() const override;
     bool addToGroup(const std::string &groupName) override;
     bool removeFromGroup(const std::string &groupName) override;
-    int getVnet() const override;
-    bool setVnet(int vnetId) override;
-    bool reclaimFromVnet() override;
     bool setPhysicalAddress(const std::string &address) override;
     bool deletePhysicalAddress() override;
     bool createClone(const std::string &cloneName) override;
     std::vector<std::string> getCloners() const override;
     std::string getMacAddress() const override;
     bool setMacAddress(const std::string &macAddress) override;
-    int getTunnelFib() const override;
-    bool setTunnelFib(int fib) override;
 
     bool destroy() override;
 
