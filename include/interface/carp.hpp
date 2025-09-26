@@ -81,6 +81,8 @@ namespace libfreebsdnet::interface {
     int getTunnelFib() const override;
     bool setTunnelFib(int fib) override;
 
+    bool destroy() override;
+
     // CARP-specific methods
     /**
      * @brief Get CARP VHID (Virtual Host ID)

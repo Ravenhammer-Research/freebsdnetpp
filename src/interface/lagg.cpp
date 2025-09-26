@@ -204,6 +204,33 @@ namespace libfreebsdnet::interface {
       return false;
     }
 
+    // First, try to create the lagg interface if it doesn't exist
+    struct ifreq ifr;
+    std::memset(&ifr, 0, sizeof(ifr));
+    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
+
+    if (ioctl(sock, SIOCIFCREATE, &ifr) < 0) {
+      if (errno != EEXIST) {
+        pImpl->lastError = "Failed to create lagg interface: " + std::string(strerror(errno));
+        close(sock);
+        return false;
+      }
+      // Interface already exists, that's fine
+    }
+
+    // Set protocol first if not already set
+    struct lagg_reqall ra;
+    std::memset(&ra, 0, sizeof(ra));
+    std::strncpy(ra.ra_ifname, pImpl->name.c_str(), IFNAMSIZ - 1);
+    ra.ra_proto = LAGG_PROTO_DEFAULT;
+
+    if (ioctl(sock, SIOCSLAGG, &ra) < 0) {
+      pImpl->lastError = "Failed to set lagg protocol: " + std::string(strerror(errno));
+      close(sock);
+      return false;
+    }
+
+    // Now add the port
     struct lagg_reqport req;
     std::memset(&req, 0, sizeof(req));
     std::strncpy(req.rp_ifname, pImpl->name.c_str(), IFNAMSIZ - 1);
@@ -252,9 +279,6 @@ namespace libfreebsdnet::interface {
     return true;
   }
 
-  std::vector<std::string> LagInterface::getInterfaces() const {
-    return pImpl->ports;
-  }
 
   bool LagInterface::hasInterface(const std::string &interfaceName) const {
     return std::find(pImpl->ports.begin(), pImpl->ports.end(), interfaceName) !=
@@ -1049,6 +1073,88 @@ namespace libfreebsdnet::interface {
     pImpl->lastError = "LACP system priority setting not implemented - "
                        "requires kernel-level access";
     return false;
+  }
+
+  bool LagInterface::destroy() {
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+      pImpl->lastError = "Failed to create socket: " + std::string(strerror(errno));
+      return false;
+    }
+
+    struct ifreq ifr;
+    std::memset(&ifr, 0, sizeof(ifr));
+    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
+
+    if (ioctl(sock, SIOCIFDESTROY, &ifr) < 0) {
+      pImpl->lastError = "Failed to destroy interface: " + std::string(strerror(errno));
+      close(sock);
+      return false;
+    }
+
+    close(sock);
+    return true;
+  }
+
+  std::vector<std::string> LagInterface::getPorts() const {
+    std::vector<std::string> ports;
+    
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+      return pImpl->ports; // Fallback to internal list
+    }
+    
+    // Use SIOCGLAGG to get lagg information
+    struct lagg_reqall ra;
+    std::memset(&ra, 0, sizeof(ra));
+    std::strncpy(ra.ra_ifname, pImpl->name.c_str(), IFNAMSIZ - 1);
+    
+    // Allocate buffer for ports
+    struct lagg_reqport *portbuf = (struct lagg_reqport *)malloc(sizeof(struct lagg_reqport) * 32);
+    if (!portbuf) {
+      close(sock);
+      return pImpl->ports;
+    }
+    
+    ra.ra_port = portbuf;
+    ra.ra_size = sizeof(struct lagg_reqport) * 32;
+    
+    if (ioctl(sock, SIOCGLAGG, &ra) == 0) {
+      // Successfully got lagg info, extract ports
+      for (int i = 0; i < ra.ra_ports; i++) {
+        ports.push_back(std::string(portbuf[i].rp_portname));
+      }
+      free(portbuf);
+      close(sock);
+      return ports;
+    }
+    
+    free(portbuf);
+    close(sock);
+    return pImpl->ports; // Fallback to internal list
+  }
+
+  std::string LagInterface::getHashType() const {
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+      return "Unknown";
+    }
+
+    struct ifreq ifr;
+    std::memset(&ifr, 0, sizeof(ifr));
+    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
+
+    // Get interface flags to determine hash type
+    if (ioctl(sock, SIOCGIFFLAGS, &ifr) < 0) {
+      close(sock);
+      return "Unknown";
+    }
+
+    close(sock);
+    
+    // For now, return a default hash type since FreeBSD doesn't expose this directly
+    // In a real implementation, this would query the kernel for the actual hash configuration
+    return "l2,l3,l4";
   }
 
 } // namespace libfreebsdnet::interface

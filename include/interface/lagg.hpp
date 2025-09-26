@@ -88,10 +88,16 @@ namespace libfreebsdnet::interface {
     bool removeInterface(const std::string &interfaceName);
 
     /**
-     * @brief Get interfaces in LAGG
-     * @return Vector of interface names
+     * @brief Get LAGG ports
+     * @return Vector of port names
      */
-    std::vector<std::string> getInterfaces() const;
+    std::vector<std::string> getPorts() const;
+
+    /**
+     * @brief Get LAGG hash type
+     * @return Hash type string (e.g., "l2,l3,l4")
+     */
+    std::string getHashType() const;
 
     /**
      * @brief Check if interface is in LAGG
@@ -133,6 +139,8 @@ namespace libfreebsdnet::interface {
     bool setMacAddress(const std::string &macAddress) override;
     int getTunnelFib() const override;
     bool setTunnelFib(int fib) override;
+
+    bool destroy() override;
 
     // InfiniBand LAG-specific methods
     /**

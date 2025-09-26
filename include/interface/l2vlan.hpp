@@ -155,6 +155,8 @@ namespace libfreebsdnet::interface {
     int getTunnelFib() const override;
     bool setTunnelFib(int fib) override;
 
+    bool destroy() override;
+
     // L2VLAN-specific methods
     /**
      * @brief Get trunk device for this L2VLAN

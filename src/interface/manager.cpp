@@ -355,6 +355,8 @@ namespace libfreebsdnet::interface {
       return InterfaceType::L2VLAN; // IFT_L2VLAN
     case 0x88:
       return InterfaceType::EPAIR; // IFT_EPAIR (assuming this is the type)
+    case 0x89:
+      return InterfaceType::LAGG; // IFT_LAGG
     default:
       return InterfaceType::ETHERNET; // Default fallback
     }

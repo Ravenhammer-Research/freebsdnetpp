@@ -114,6 +114,8 @@ namespace libfreebsdnet::interface {
     int getTunnelFib() const override;
     bool setTunnelFib(int fib) override;
 
+    bool destroy() override;
+
   private:
     class Impl;
     std::unique_ptr<Impl> pImpl;

@@ -663,4 +663,25 @@ namespace libfreebsdnet::interface {
     return true;
   }
 
+  bool PfsyncInterface::destroy() {
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+      pImpl->lastError = "Failed to create socket: " + std::string(strerror(errno));
+      return false;
+    }
+
+    struct ifreq ifr;
+    std::memset(&ifr, 0, sizeof(ifr));
+    std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
+
+    if (ioctl(sock, SIOCIFDESTROY, &ifr) < 0) {
+      pImpl->lastError = "Failed to destroy interface: " + std::string(strerror(errno));
+      close(sock);
+      return false;
+    }
+
+    close(sock);
+    return true;
+  }
+
 } // namespace libfreebsdnet::interface

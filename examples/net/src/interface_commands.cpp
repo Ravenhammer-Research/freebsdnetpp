@@ -10,8 +10,10 @@
 
 #include <interface/wireless.hpp>
 #include <interface/bridge.hpp>
+#include <interface/lagg.hpp>
 #include <system/config.hpp>
 #include <iostream>
+#include <sstream>
 #include <net/if_types.h>
 #include <net/if_var.h>
 #include <net_tool.hpp>
@@ -231,6 +233,48 @@ namespace net {
           }
         } else {
           printError("Invalid state. Use 'up' or 'down'");
+          return false;
+        }
+      } else if (property == "port") {
+        // Add interface as lagg port
+        if (iface->getType() == libfreebsdnet::interface::InterfaceType::LAGG) {
+          auto lagIface = dynamic_cast<libfreebsdnet::interface::LagInterface*>(iface.get());
+          if (lagIface) {
+            bool allSuccess = true;
+            std::vector<std::string> addedPorts;
+            std::vector<std::string> failedPorts;
+            
+            // Add all ports from args starting from index 4 (after 'port')
+            for (size_t i = 4; i < args.size(); i++) {
+              if (lagIface->addInterface(args[i])) {
+                addedPorts.push_back(args[i]);
+              } else {
+                failedPorts.push_back(args[i]);
+                allSuccess = false;
+              }
+            }
+            
+            if (allSuccess) {
+              std::string portList = addedPorts[0];
+              for (size_t i = 1; i < addedPorts.size(); i++) {
+                portList += ", " + addedPorts[i];
+              }
+              printSuccess("Added ports [" + portList + "] to " + name);
+              return true;
+            } else {
+              std::string errorMsg = "Failed to add some ports: ";
+              for (const auto& port : failedPorts) {
+                errorMsg += port + " ";
+              }
+              printError(errorMsg + lagIface->getLastError());
+              return false;
+            }
+          } else {
+            printError("Interface is not a LAGG interface");
+            return false;
+          }
+        } else {
+          printError("Port command only works with LAGG interfaces");
           return false;
         }
       } else if (property == "member") {
@@ -565,12 +609,12 @@ namespace net {
           return false;
         }
       } else {
-        // Remove interface (bring down)
-        if (iface->bringDown()) {
-          printSuccess("Brought down interface " + name);
+        // Destroy interface
+        if (iface->destroy()) {
+          printSuccess("Destroyed interface " + name);
           return true;
         } else {
-          printError("Failed to bring down interface: " +
+          printError("Failed to destroy interface: " +
                      iface->getLastError());
           return false;
         }
@@ -690,6 +734,135 @@ namespace net {
               printf("%-12s %-6s %-8s %-6s %-8s %-6s %-8s %-20s\n",
                      "", "", "", "", "", "", "", memberList[i].c_str());
             }
+          }
+        }
+        
+        return true;
+      } else if (type == "lagg") {
+        auto interfaceInfos = interfaceManager.getInterfaces();
+        
+        // Filter for lagg interfaces (by name since IFT_LAGG may not be available)
+        std::vector<libfreebsdnet::interface::InterfaceInfo> laggInterfaces;
+        for (const auto& info : interfaceInfos) {
+          if (info.name.substr(0, 4) == "lagg") {
+            laggInterfaces.push_back(info);
+          }
+        }
+        
+        if (laggInterfaces.empty()) {
+          printInfo("No lagg interfaces found.");
+          return true;
+        }
+        
+        printInfo("LAGG Interfaces");
+        printInfo("===============");
+        printInfo("");
+        
+        // Print table header
+        printf("%-12s %-6s %-8s %-6s %-8s %-12s %-8s %-20s\n", 
+               "Interface", "Index", "Status", "MTU", "FIB", "Protocol", "Hash", "Ports");
+        printf("%-12s %-6s %-8s %-6s %-8s %-12s %-8s %-20s\n", 
+               "----------", "-----", "------", "---", "---", "----------", "----", "-----");
+        
+        for (const auto& info : laggInterfaces) {
+          // Force creation of LagInterface for lagg interfaces
+          std::unique_ptr<libfreebsdnet::interface::Interface> iface;
+          if (info.name.substr(0, 4) == "lagg") {
+            // Force create LagInterface for lagg interfaces
+            iface = std::make_unique<libfreebsdnet::interface::LagInterface>(info.name, info.index, info.flags);
+          } else {
+            iface = libfreebsdnet::interface::createInterface(info.name, info.index, info.flags);
+          }
+          
+          int fib = -1;
+          std::vector<std::string> portList;
+          std::string protocol = "Unknown";
+          std::string hash = "Unknown";
+          
+          if (iface) {
+            fib = iface->getFib();
+            
+            // Cast to LagInterface to get lagg-specific information
+            auto laggIface = dynamic_cast<libfreebsdnet::interface::LagInterface*>(iface.get());
+            if (laggIface) {
+              // Get ports from LagInterface
+              portList = laggIface->getPorts();
+              
+              // Get protocol
+              auto proto = laggIface->getProtocol();
+              switch (proto) {
+                case libfreebsdnet::interface::LagProtocol::FAILOVER:
+                  protocol = "failover";
+                  break;
+                case libfreebsdnet::interface::LagProtocol::FEC:
+                  protocol = "fec";
+                  break;
+                case libfreebsdnet::interface::LagProtocol::LACP:
+                  protocol = "lacp";
+                  break;
+                case libfreebsdnet::interface::LagProtocol::LOADBALANCE:
+                  protocol = "loadbalance";
+                  break;
+                case libfreebsdnet::interface::LagProtocol::ROUNDROBIN:
+                  protocol = "roundrobin";
+                  break;
+                default:
+                  protocol = "unknown";
+                  break;
+              }
+              
+              // Get hash type
+              hash = laggIface->getHashType();
+            } else {
+              // Fallback to groups if not a LagInterface
+              auto groups = iface->getGroups();
+              if (!groups.empty()) {
+                for (const auto& group : groups) {
+                  if (group != "all" && group != "lagg") {
+                    portList.push_back(group);
+                  }
+                }
+              }
+              protocol = "Unknown";
+              hash = "Unknown";
+            }
+          }
+          
+          // Split hash into components (e.g., "l2,l3,l4" -> ["l2", "l3", "l4"])
+          std::vector<std::string> hashComponents;
+          if (!hash.empty() && hash != "Unknown") {
+            std::stringstream ss(hash);
+            std::string component;
+            while (std::getline(ss, component, ',')) {
+              // Remove leading/trailing whitespace
+              component.erase(0, component.find_first_not_of(" \t"));
+              component.erase(component.find_last_not_of(" \t") + 1);
+              if (!component.empty()) {
+                hashComponents.push_back(component);
+              }
+            }
+          }
+          
+          // Print lagg info with ports and hash components aligned on same rows
+          // First, print the interface info with first hash component and first port
+          printf("%-12s %-6u %-8s %-6d %-8d %-12s %-8s %-20s %-20s\n",
+                 info.name.c_str(),
+                 info.index,
+                 (info.flags & IFF_UP) ? "UP" : "DOWN",
+                 info.mtu,
+                 fib,
+                 protocol.c_str(),
+                 (hashComponents.size() > 0) ? hashComponents[0].c_str() : "",
+                 (portList.size() > 0) ? portList[0].c_str() : "None",
+                 "");
+          
+          // Print additional rows with hash and port components properly aligned
+          size_t maxRows = std::max(hashComponents.size(), portList.size());
+          for (size_t i = 1; i < maxRows; i++) {
+            printf("%-12s %-6s %-8s %-6s %-8s %-12s %-8s %-20s %-20s\n",
+                   "", "", "", "", "", "", "",
+                   (i < hashComponents.size()) ? hashComponents[i].c_str() : "",
+                   (i < portList.size()) ? portList[i].c_str() : "");
           }
         }
         

@@ -291,6 +291,12 @@ namespace libfreebsdnet::interface {
      */
     virtual bool setTunnelFib(int fib) = 0;
 
+    /**
+     * @brief Destroy this interface
+     * @return true on success, false on error
+     */
+    virtual bool destroy() = 0;
+
   protected:
     Interface() = default;
     Interface(const Interface &) = default;

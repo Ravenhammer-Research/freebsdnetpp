@@ -85,6 +85,8 @@ namespace libfreebsdnet::interface {
     int getTunnelFib() const override;
     bool setTunnelFib(int fib) override;
 
+    bool destroy() override;
+
     // IEEE 802.11-specific methods
     /**
      * @brief Get current channel
