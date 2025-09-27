@@ -13,9 +13,9 @@
 #include <ifaddrs.h>
 #include <interface/tap.hpp>
 #include <net/if.h>
-#include <net/if_tap.h>
 #include <net/if_mib.h>
 #include <net/if_private.h>
+#include <net/if_tap.h>
 #include <netinet/in.h>
 #include <stdexcept>
 #include <sys/ioctl.h>
@@ -38,11 +38,14 @@ namespace libfreebsdnet::interface {
     bool persistent;
 
     Impl(const std::string &name, unsigned int index, int flags)
-        : name(name), index(index), flags(flags), unit(-1), owner(-1), group(-1), persistent(false) {}
+        : name(name), index(index), flags(flags), unit(-1), owner(-1),
+          group(-1), persistent(false) {}
   };
 
-  TapInterface::TapInterface(const std::string &name, unsigned int index, int flags)
-      : TunnelInterface(name, index, flags), pImpl(std::make_unique<Impl>(name, index, flags)) {}
+  TapInterface::TapInterface(const std::string &name, unsigned int index,
+                             int flags)
+      : TunnelInterface(name, index, flags),
+        pImpl(std::make_unique<Impl>(name, index, flags)) {}
 
   TapInterface::~TapInterface() = default;
 
@@ -50,9 +53,7 @@ namespace libfreebsdnet::interface {
     return InterfaceType::TUNNEL; // TAP is a type of tunnel
   }
 
-  int TapInterface::getUnit() const {
-    return pImpl->unit;
-  }
+  int TapInterface::getUnit() const { return pImpl->unit; }
 
   bool TapInterface::setUnit(int unit) {
     if (unit < 0) {
@@ -63,9 +64,7 @@ namespace libfreebsdnet::interface {
     return true; // Unit setting would require specific TAP ioctls
   }
 
-  int TapInterface::getOwner() const {
-    return pImpl->owner;
-  }
+  int TapInterface::getOwner() const { return pImpl->owner; }
 
   bool TapInterface::setOwner(int uid) {
     if (uid < 0) {
@@ -76,9 +75,7 @@ namespace libfreebsdnet::interface {
     return true; // Owner setting would require specific TAP ioctls
   }
 
-  int TapInterface::getGroup() const {
-    return pImpl->group;
-  }
+  int TapInterface::getGroup() const { return pImpl->group; }
 
   bool TapInterface::setGroup(int gid) {
     if (gid < 0) {
@@ -89,9 +86,7 @@ namespace libfreebsdnet::interface {
     return true; // Group setting would require specific TAP ioctls
   }
 
-  bool TapInterface::isPersistent() const {
-    return pImpl->persistent;
-  }
+  bool TapInterface::isPersistent() const { return pImpl->persistent; }
 
   bool TapInterface::setPersistent(bool persistent) {
     pImpl->persistent = persistent;
@@ -99,12 +94,14 @@ namespace libfreebsdnet::interface {
   }
 
   int TapInterface::getTunnelFib() const {
-    throw std::runtime_error("TAP interfaces do not support tunnel FIB operations");
+    throw std::runtime_error(
+        "TAP interfaces do not support tunnel FIB operations");
   }
 
   bool TapInterface::setTunnelFib(int fib) {
     (void)fib; // Suppress unused parameter warning
-    throw std::runtime_error("TAP interfaces do not support tunnel FIB operations");
+    throw std::runtime_error(
+        "TAP interfaces do not support tunnel FIB operations");
   }
 
   // Group management methods (call base class)
@@ -121,13 +118,9 @@ namespace libfreebsdnet::interface {
   }
 
   // Base class method implementations (call base class)
-  int TapInterface::getMedia() const {
-    return Interface::getMedia();
-  }
+  int TapInterface::getMedia() const { return Interface::getMedia(); }
 
-  bool TapInterface::setMedia(int media) {
-    return Interface::setMedia(media);
-  }
+  bool TapInterface::setMedia(int media) { return Interface::setMedia(media); }
 
   int TapInterface::getMediaStatus() const {
     return Interface::getMediaStatus();

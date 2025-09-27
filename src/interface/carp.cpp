@@ -51,7 +51,9 @@ namespace libfreebsdnet::interface {
   std::string CarpInterface::getName() const { return Interface::getName(); }
   unsigned int CarpInterface::getIndex() const { return Interface::getIndex(); }
   InterfaceType CarpInterface::getType() const { return InterfaceType::CARP; }
-  std::vector<Flag> CarpInterface::getFlags() const { return Interface::getFlags(); }
+  std::vector<Flag> CarpInterface::getFlags() const {
+    return Interface::getFlags();
+  }
   bool CarpInterface::setFlags(int flags) { return Interface::setFlags(flags); }
   bool CarpInterface::bringUp() { return Interface::bringUp(); }
   bool CarpInterface::bringDown() { return Interface::bringDown(); }
@@ -59,7 +61,9 @@ namespace libfreebsdnet::interface {
 
   int CarpInterface::getMtu() const { return Interface::getMtu(); }
   bool CarpInterface::setMtu(int mtu) { return Interface::setMtu(mtu); }
-  std::string CarpInterface::getLastError() const { return Interface::getLastError(); }
+  std::string CarpInterface::getLastError() const {
+    return Interface::getLastError();
+  }
 
   int CarpInterface::getFib() const { return Interface::getFib(); }
   bool CarpInterface::setFib(int fib) { return Interface::setFib(fib); }
@@ -459,7 +463,6 @@ namespace libfreebsdnet::interface {
     return Interface::removeFromGroup(groupName);
   }
 
-
   bool CarpInterface::setPhysicalAddress(const std::string &address) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
@@ -585,11 +588,11 @@ namespace libfreebsdnet::interface {
     return false;
   }
 
-
   bool CarpInterface::destroy() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-      pImpl->lastError = "Failed to create socket: " + std::string(strerror(errno));
+      pImpl->lastError =
+          "Failed to create socket: " + std::string(strerror(errno));
       return false;
     }
 
@@ -598,7 +601,8 @@ namespace libfreebsdnet::interface {
     std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
 
     if (ioctl(sock, SIOCIFDESTROY, &ifr) < 0) {
-      pImpl->lastError = "Failed to destroy interface: " + std::string(strerror(errno));
+      pImpl->lastError =
+          "Failed to destroy interface: " + std::string(strerror(errno));
       close(sock);
       return false;
     }
@@ -606,6 +610,5 @@ namespace libfreebsdnet::interface {
     close(sock);
     return true;
   }
-
 
 } // namespace libfreebsdnet::interface

@@ -30,7 +30,6 @@
 
 namespace libfreebsdnet::interface {
 
-
   LagInterface::LagInterface(const std::string &name, unsigned int index,
                              int flags)
       : Interface(name, index, flags) {}
@@ -43,17 +42,20 @@ namespace libfreebsdnet::interface {
 
   InterfaceType LagInterface::getType() const { return InterfaceType::LAGG; }
 
-  std::vector<Flag> LagInterface::getFlags() const { return Interface::getFlags(); }
+  std::vector<Flag> LagInterface::getFlags() const {
+    return Interface::getFlags();
+  }
   bool LagInterface::setFlags(int flags) { return Interface::setFlags(flags); }
   bool LagInterface::bringUp() { return Interface::bringUp(); }
   bool LagInterface::bringDown() { return Interface::bringDown(); }
   bool LagInterface::isUp() const { return Interface::isUp(); }
   int LagInterface::getMtu() const { return Interface::getMtu(); }
   bool LagInterface::setMtu(int mtu) { return Interface::setMtu(mtu); }
-  std::string LagInterface::getLastError() const { return Interface::getLastError(); }
+  std::string LagInterface::getLastError() const {
+    return Interface::getLastError();
+  }
   int LagInterface::getFib() const { return Interface::getFib(); }
   bool LagInterface::setFib(int fib) { return Interface::setFib(fib); }
-
 
   LagProtocol LagInterface::getProtocol() const {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -68,16 +70,16 @@ namespace libfreebsdnet::interface {
     if (ioctl(sock, SIOCGLAGG, &ra) == 0) {
       close(sock);
       switch (ra.ra_proto) {
-        case LAGG_PROTO_FAILOVER:
-          return LagProtocol::FAILOVER;
-        case LAGG_PROTO_LACP:
-          return LagProtocol::LACP;
-        case LAGG_PROTO_LOADBALANCE:
-          return LagProtocol::LOADBALANCE;
-        case LAGG_PROTO_ROUNDROBIN:
-          return LagProtocol::ROUNDROBIN;
-        default:
-          return LagProtocol::UNKNOWN;
+      case LAGG_PROTO_FAILOVER:
+        return LagProtocol::FAILOVER;
+      case LAGG_PROTO_LACP:
+        return LagProtocol::LACP;
+      case LAGG_PROTO_LOADBALANCE:
+        return LagProtocol::LOADBALANCE;
+      case LAGG_PROTO_ROUNDROBIN:
+        return LagProtocol::ROUNDROBIN;
+      default:
+        return LagProtocol::UNKNOWN;
       }
     }
 
@@ -88,7 +90,7 @@ namespace libfreebsdnet::interface {
   bool LagInterface::setProtocol(LagProtocol protocol) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-// Use base class error handling
+      // Use base class error handling
       return false;
     }
 
@@ -100,30 +102,30 @@ namespace libfreebsdnet::interface {
     switch (protocol) {
     case LagProtocol::FAILOVER:
       req.ra_proto = LAGG_PROTO_FAILOVER;
-            // Protocol will be retrieved by getProtocol() method
+      // Protocol will be retrieved by getProtocol() method
       break;
     case LagProtocol::LACP:
       req.ra_proto = LAGG_PROTO_LACP;
-// Protocol will be retrieved by getProtocol() method
+      // Protocol will be retrieved by getProtocol() method
       break;
     case LagProtocol::LOADBALANCE:
       req.ra_proto = LAGG_PROTO_LOADBALANCE;
-// Protocol will be retrieved by getProtocol() method
+      // Protocol will be retrieved by getProtocol() method
       break;
     case LagProtocol::ROUNDROBIN:
       req.ra_proto = LAGG_PROTO_ROUNDROBIN;
-// Protocol will be retrieved by getProtocol() method
+      // Protocol will be retrieved by getProtocol() method
       break;
     // BROADCAST not supported in enum
     default:
-// Use base class error handling
+      // Use base class error handling
       close(sock);
       return false;
     }
 
     if (ioctl(sock, SIOCSLAGG, &req) < 0) {
-// Use base class error handling
-          "Failed to set LAGG protocol: " + std::string(strerror(errno));
+      // Use base class error handling
+      "Failed to set LAGG protocol: " + std::string(strerror(errno));
       close(sock);
       return false;
     }
@@ -135,7 +137,7 @@ namespace libfreebsdnet::interface {
   bool LagInterface::addInterface(const std::string &interfaceName) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-// Use base class error handling
+      // Use base class error handling
       return false;
     }
 
@@ -146,7 +148,8 @@ namespace libfreebsdnet::interface {
 
     if (ioctl(sock, SIOCIFCREATE, &ifr) < 0) {
       if (errno != EEXIST) {
-// Use base class error handling "Failed to create lagg interface: " + std::string(strerror(errno));
+        // Use base class error handling "Failed to create lagg interface: " +
+        // std::string(strerror(errno));
         close(sock);
         return false;
       }
@@ -160,7 +163,8 @@ namespace libfreebsdnet::interface {
     ra.ra_proto = LAGG_PROTO_DEFAULT;
 
     if (ioctl(sock, SIOCSLAGG, &ra) < 0) {
-// Use base class error handling "Failed to set lagg protocol: " + std::string(strerror(errno));
+      // Use base class error handling "Failed to set lagg protocol: " +
+      // std::string(strerror(errno));
       close(sock);
       return false;
     }
@@ -172,8 +176,8 @@ namespace libfreebsdnet::interface {
     std::strncpy(req.rp_portname, interfaceName.c_str(), IFNAMSIZ - 1);
 
     if (ioctl(sock, SIOCSLAGGPORT, &req) < 0) {
-// Use base class error handling
-          "Failed to add interface to LAGG: " + std::string(strerror(errno));
+      // Use base class error handling
+      "Failed to add interface to LAGG: " + std::string(strerror(errno));
       close(sock);
       return false;
     }
@@ -187,7 +191,7 @@ namespace libfreebsdnet::interface {
   bool LagInterface::removeInterface(const std::string &interfaceName) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-// Use base class error handling
+      // Use base class error handling
       return false;
     }
 
@@ -197,8 +201,9 @@ namespace libfreebsdnet::interface {
     std::strncpy(req.rp_portname, interfaceName.c_str(), IFNAMSIZ - 1);
 
     if (ioctl(sock, SIOCSLAGGDELPORT, &req) < 0) {
-// Use base class error handling "Failed to remove interface from LAGG: " +
-                         std::string(strerror(errno));
+      // Use base class error handling "Failed to remove interface from LAGG: "
+      // +
+      std::string(strerror(errno));
       close(sock);
       return false;
     }
@@ -211,7 +216,6 @@ namespace libfreebsdnet::interface {
     return true;
   }
 
-
   bool LagInterface::hasInterface(const std::string &interfaceName) const {
     (void)interfaceName; // Suppress unused parameter warning
     // Ports will be retrieved by getPorts() method
@@ -223,14 +227,9 @@ namespace libfreebsdnet::interface {
     return 0;
   }
 
+  int LagInterface::getMedia() const { return Interface::getMedia(); }
 
-  int LagInterface::getMedia() const {
-    return Interface::getMedia();
-  }
-
-  bool LagInterface::setMedia(int media) {
-    return Interface::setMedia(media);
-  }
+  bool LagInterface::setMedia(int media) { return Interface::setMedia(media); }
 
   int LagInterface::getMediaStatus() const {
     return Interface::getMediaStatus();
@@ -314,7 +313,7 @@ namespace libfreebsdnet::interface {
   bool LagInterface::setVnet(int vnetId) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-// Use base class error handling
+      // Use base class error handling
       return false;
     }
 
@@ -324,7 +323,8 @@ namespace libfreebsdnet::interface {
     ifr.ifr_jid = vnetId;
 
     if (ioctl(sock, SIOCSIFVNET, &ifr) < 0) {
-// Use base class error handling "Failed to set VNET: " + std::string(strerror(errno));
+      // Use base class error handling "Failed to set VNET: " +
+      // std::string(strerror(errno));
       close(sock);
       return false;
     }
@@ -336,7 +336,7 @@ namespace libfreebsdnet::interface {
   bool LagInterface::reclaimFromVnet() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-// Use base class error handling
+      // Use base class error handling
       return false;
     }
 
@@ -345,8 +345,8 @@ namespace libfreebsdnet::interface {
     std::strncpy(ifr.ifr_name, getName().c_str(), IFNAMSIZ - 1);
 
     if (ioctl(sock, SIOCSIFRVNET, &ifr) < 0) {
-// Use base class error handling
-          "Failed to reclaim from VNET: " + std::string(strerror(errno));
+      // Use base class error handling
+      "Failed to reclaim from VNET: " + std::string(strerror(errno));
       close(sock);
       return false;
     }
@@ -358,7 +358,7 @@ namespace libfreebsdnet::interface {
   bool LagInterface::setPhysicalAddress(const std::string &address) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-// Use base class error handling
+      // Use base class error handling
       return false;
     }
 
@@ -371,14 +371,14 @@ namespace libfreebsdnet::interface {
         reinterpret_cast<struct sockaddr_in *>(&ifra.ifra_addr);
     sin->sin_family = AF_INET;
     if (inet_pton(AF_INET, address.c_str(), &sin->sin_addr) != 1) {
-// Use base class error handling "Invalid IP address format";
+      // Use base class error handling "Invalid IP address format";
       close(sock);
       return false;
     }
 
     if (ioctl(sock, SIOCSIFPHYADDR, &ifra) < 0) {
-// Use base class error handling
-          "Failed to set physical address: " + std::string(strerror(errno));
+      // Use base class error handling
+      "Failed to set physical address: " + std::string(strerror(errno));
       close(sock);
       return false;
     }
@@ -390,7 +390,7 @@ namespace libfreebsdnet::interface {
   bool LagInterface::deletePhysicalAddress() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-// Use base class error handling
+      // Use base class error handling
       return false;
     }
 
@@ -399,8 +399,8 @@ namespace libfreebsdnet::interface {
     std::strncpy(ifr.ifr_name, getName().c_str(), IFNAMSIZ - 1);
 
     if (ioctl(sock, SIOCDIFPHYADDR, &ifr) < 0) {
-// Use base class error handling
-          "Failed to delete physical address: " + std::string(strerror(errno));
+      // Use base class error handling
+      "Failed to delete physical address: " + std::string(strerror(errno));
       close(sock);
       return false;
     }
@@ -412,7 +412,7 @@ namespace libfreebsdnet::interface {
   bool LagInterface::createClone(const std::string &cloneName) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-// Use base class error handling
+      // Use base class error handling
       return false;
     }
 
@@ -421,8 +421,8 @@ namespace libfreebsdnet::interface {
     std::strncpy(ifr.ifr_name, cloneName.c_str(), IFNAMSIZ - 1);
 
     if (ioctl(sock, SIOCIFCREATE2, &ifr) < 0) {
-// Use base class error handling
-          "Failed to create clone: " + std::string(strerror(errno));
+      // Use base class error handling
+      "Failed to create clone: " + std::string(strerror(errno));
       close(sock);
       return false;
     }
@@ -502,7 +502,7 @@ namespace libfreebsdnet::interface {
   bool LagInterface::setMacAddress(const std::string &macAddress) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-// Use base class error handling
+      // Use base class error handling
       return false;
     }
 
@@ -515,7 +515,7 @@ namespace libfreebsdnet::interface {
     if (std::sscanf(macAddress.c_str(),
                     "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx", &mac[0],
                     &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]) != 6) {
-// Use base class error handling "Invalid MAC address format";
+      // Use base class error handling "Invalid MAC address format";
       close(sock);
       return false;
     }
@@ -526,8 +526,8 @@ namespace libfreebsdnet::interface {
     ifr.ifr_addr.sa_len = 6;
 
     if (ioctl(sock, SIOCSIFLLADDR, &ifr) < 0) {
-// Use base class error handling
-          "Failed to set MAC address: " + std::string(strerror(errno));
+      // Use base class error handling
+      "Failed to set MAC address: " + std::string(strerror(errno));
       close(sock);
       return false;
     }
@@ -535,7 +535,6 @@ namespace libfreebsdnet::interface {
     close(sock);
     return true;
   }
-
 
   // InfiniBand LAG-specific methods
   bool LagInterface::isInfinibandLag() const {
@@ -581,18 +580,18 @@ namespace libfreebsdnet::interface {
 
   bool LagInterface::setInfinibandAddress(const std::string &address) {
     if (!isInfinibandLag()) {
-// Use base class error handling "Not an InfiniBand LAG interface";
+      // Use base class error handling "Not an InfiniBand LAG interface";
       return false;
     }
 
     if (address.length() != INFINIBAND_ADDR_LEN * 2) {
-// Use base class error handling "Invalid InfiniBand address format";
+      // Use base class error handling "Invalid InfiniBand address format";
       return false;
     }
 
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-// Use base class error handling
+      // Use base class error handling
       return false;
     }
 
@@ -604,7 +603,7 @@ namespace libfreebsdnet::interface {
     unsigned char addr[INFINIBAND_ADDR_LEN];
     for (int i = 0; i < INFINIBAND_ADDR_LEN; i++) {
       if (std::sscanf(address.c_str() + (i * 2), "%02hhx", &addr[i]) != 1) {
-// Use base class error handling "Invalid InfiniBand address format";
+        // Use base class error handling "Invalid InfiniBand address format";
         close(sock);
         return false;
       }
@@ -613,7 +612,8 @@ namespace libfreebsdnet::interface {
     // For InfiniBand addresses, we need to use a different approach
     // since sa_data is only 14 bytes but InfiniBand addresses are 20 bytes
     // This is a limitation of the standard sockaddr structure
-    // InfiniBand address setting not supported - address too long for standard sockaddr
+    // InfiniBand address setting not supported - address too long for standard
+    // sockaddr
     close(sock);
     return false;
   }
@@ -629,13 +629,14 @@ namespace libfreebsdnet::interface {
 
   bool LagInterface::setInfinibandMtu(int mtu) {
     if (!isInfinibandLag()) {
-// Use base class error handling "Not an InfiniBand LAG interface";
+      // Use base class error handling "Not an InfiniBand LAG interface";
       return false;
     }
 
     // InfiniBand has specific MTU constraints
     if (mtu < 256 || mtu > 4096) {
-// Use base class error handling "Invalid InfiniBand MTU (must be 256-4096)";
+      // Use base class error handling "Invalid InfiniBand MTU (must be
+      // 256-4096)";
       return false;
     }
 
@@ -664,13 +665,13 @@ namespace libfreebsdnet::interface {
 
   bool LagInterface::setLacpStrictMode(bool strict) {
     if (!isIeee8023adLag()) {
-// Use base class error handling "Not an IEEE 802.3ad LAG";
+      // Use base class error handling "Not an IEEE 802.3ad LAG";
       return false;
     }
 
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-// Use base class error handling
+      // Use base class error handling
       return false;
     }
 
@@ -685,8 +686,8 @@ namespace libfreebsdnet::interface {
     }
 
     if (ioctl(sock, SIOCSLAGGPORT, &lrp) < 0) {
-// Use base class error handling
-          "Failed to set LACP strict mode: " + std::string(strerror(errno));
+      // Use base class error handling
+      "Failed to set LACP strict mode: " + std::string(strerror(errno));
       close(sock);
       return false;
     }
@@ -720,13 +721,13 @@ namespace libfreebsdnet::interface {
 
   bool LagInterface::setLacpFastTimeout(bool fast) {
     if (!isIeee8023adLag()) {
-// Use base class error handling "Not an IEEE 802.3ad LAG";
+      // Use base class error handling "Not an IEEE 802.3ad LAG";
       return false;
     }
 
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-// Use base class error handling
+      // Use base class error handling
       return false;
     }
 
@@ -741,8 +742,8 @@ namespace libfreebsdnet::interface {
     }
 
     if (ioctl(sock, SIOCSLAGGPORT, &lrp) < 0) {
-// Use base class error handling
-          "Failed to set LACP fast timeout: " + std::string(strerror(errno));
+      // Use base class error handling
+      "Failed to set LACP fast timeout: " + std::string(strerror(errno));
       close(sock);
       return false;
     }
@@ -796,24 +797,27 @@ namespace libfreebsdnet::interface {
 
   bool LagInterface::setLacpSystemPriority(int priority) {
     if (!isIeee8023adLag()) {
-// Use base class error handling "Not an IEEE 802.3ad LAG";
+      // Use base class error handling "Not an IEEE 802.3ad LAG";
       return false;
     }
 
     if (priority < 0 || priority > 65535) {
-// Use base class error handling "Invalid LACP system priority (must be 0-65535)";
+      // Use base class error handling "Invalid LACP system priority (must be
+      // 0-65535)";
       return false;
     }
 
     // This would require kernel-level access to set LACP system priority
-    // LACP system priority setting not implemented - requires kernel-level access
+    // LACP system priority setting not implemented - requires kernel-level
+    // access
     return false;
   }
 
   bool LagInterface::destroy() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-// Use base class error handling "Failed to create socket: " + std::string(strerror(errno));
+      // Use base class error handling "Failed to create socket: " +
+      // std::string(strerror(errno));
       return false;
     }
 
@@ -822,7 +826,8 @@ namespace libfreebsdnet::interface {
     std::strncpy(ifr.ifr_name, getName().c_str(), IFNAMSIZ - 1);
 
     if (ioctl(sock, SIOCIFDESTROY, &ifr) < 0) {
-// Use base class error handling "Failed to destroy interface: " + std::string(strerror(errno));
+      // Use base class error handling "Failed to destroy interface: " +
+      // std::string(strerror(errno));
       close(sock);
       return false;
     }
@@ -833,27 +838,28 @@ namespace libfreebsdnet::interface {
 
   std::vector<std::string> LagInterface::getPorts() const {
     std::vector<std::string> ports;
-    
+
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
       return ports; // Fallback to internal list
     }
-    
+
     // Use SIOCGLAGG to get lagg information
     struct lagg_reqall ra;
     std::memset(&ra, 0, sizeof(ra));
     std::strncpy(ra.ra_ifname, getName().c_str(), IFNAMSIZ - 1);
-    
+
     // Allocate buffer for ports
-    struct lagg_reqport *portbuf = (struct lagg_reqport *)malloc(sizeof(struct lagg_reqport) * 32);
+    struct lagg_reqport *portbuf =
+        (struct lagg_reqport *)malloc(sizeof(struct lagg_reqport) * 32);
     if (!portbuf) {
       close(sock);
       return ports;
     }
-    
+
     ra.ra_port = portbuf;
     ra.ra_size = sizeof(struct lagg_reqport) * 32;
-    
+
     if (ioctl(sock, SIOCGLAGG, &ra) == 0) {
       // Successfully got lagg info, extract ports
       for (int i = 0; i < ra.ra_ports; i++) {
@@ -863,7 +869,7 @@ namespace libfreebsdnet::interface {
       close(sock);
       return ports;
     }
-    
+
     free(portbuf);
     close(sock);
     return ports; // Fallback to internal list
@@ -886,9 +892,10 @@ namespace libfreebsdnet::interface {
     }
 
     close(sock);
-    
-    // For now, return a default hash type since FreeBSD doesn't expose this directly
-    // In a real implementation, this would query the kernel for the actual hash configuration
+
+    // For now, return a default hash type since FreeBSD doesn't expose this
+    // directly In a real implementation, this would query the kernel for the
+    // actual hash configuration
     return "l2,l3,l4";
   }
 

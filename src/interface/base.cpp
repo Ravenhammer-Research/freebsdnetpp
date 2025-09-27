@@ -7,18 +7,18 @@
  * @year 2024
  */
 
+#include <arpa/inet.h>
+#include <cstring>
+#include <errno.h>
+#include <ifaddrs.h>
 #include <interface/base.hpp>
 #include <interface/manager.hpp>
 #include <memory>
 #include <net/if.h>
 #include <net/if_media.h>
 #include <net80211/ieee80211_ioctl.h>
-#include <string>
-#include <arpa/inet.h>
-#include <cstring>
-#include <errno.h>
-#include <ifaddrs.h>
 #include <netinet/in.h>
+#include <string>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -35,27 +35,30 @@ namespace libfreebsdnet::interface {
   std::vector<libfreebsdnet::types::Address> Interface::getAddresses() const {
     std::vector<libfreebsdnet::types::Address> addresses;
     struct ifaddrs *ifaddrs_ptr;
-    
+
     if (getifaddrs(&ifaddrs_ptr) == -1) {
       return addresses;
     }
-    
-    for (struct ifaddrs *ifa = ifaddrs_ptr; ifa != nullptr; ifa = ifa->ifa_next) {
-      if (ifa->ifa_name && ifa->ifa_addr && 
+
+    for (struct ifaddrs *ifa = ifaddrs_ptr; ifa != nullptr;
+         ifa = ifa->ifa_next) {
+      if (ifa->ifa_name && ifa->ifa_addr &&
           std::string(ifa->ifa_name) == getName()) {
         if (ifa->ifa_addr->sa_family == AF_INET) {
           struct sockaddr_in *addr_in = (struct sockaddr_in *)ifa->ifa_addr;
           char ip_str[INET_ADDRSTRLEN];
           if (inet_ntop(AF_INET, &addr_in->sin_addr, ip_str, INET_ADDRSTRLEN)) {
             // For now, we'll use a default prefix length of 24 for IPv4
-            // In a real implementation, you'd want to get the actual prefix length
+            // In a real implementation, you'd want to get the actual prefix
+            // length
             std::string addressStr = std::string(ip_str) + "/24";
             addresses.emplace_back(addressStr);
           }
         } else if (ifa->ifa_addr->sa_family == AF_INET6) {
           struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)ifa->ifa_addr;
           char ip_str[INET6_ADDRSTRLEN];
-          if (inet_ntop(AF_INET6, &addr_in6->sin6_addr, ip_str, INET6_ADDRSTRLEN)) {
+          if (inet_ntop(AF_INET6, &addr_in6->sin6_addr, ip_str,
+                        INET6_ADDRSTRLEN)) {
             // For IPv6, use a default prefix length of 64
             std::string addressStr = std::string(ip_str) + "/64";
             addresses.emplace_back(addressStr);
@@ -63,7 +66,7 @@ namespace libfreebsdnet::interface {
         }
       }
     }
-    
+
     freeifaddrs(ifaddrs_ptr);
     return addresses;
   }
@@ -183,8 +186,8 @@ namespace libfreebsdnet::interface {
   }
 
   bool Interface::setFib(int fib) {
-    // XXX Set FIB assignment using the correct FreeBSD ioctl (like ifconfig does)
-    // Try AF_INET first, fall back to AF_LOCAL if that fails
+    // XXX Set FIB assignment using the correct FreeBSD ioctl (like ifconfig
+    // does) Try AF_INET first, fall back to AF_LOCAL if that fails
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0 && errno == EAFNOSUPPORT) {
       sock = socket(AF_LOCAL, SOCK_DGRAM, 0);
@@ -203,34 +206,31 @@ namespace libfreebsdnet::interface {
     return result;
   }
 
-  std::string Interface::getName() const {
-    return pImpl ? pImpl->name : "";
-  }
+  std::string Interface::getName() const { return pImpl ? pImpl->name : ""; }
 
-  unsigned int Interface::getIndex() const {
-    return pImpl ? pImpl->index : 0;
-  }
-
+  unsigned int Interface::getIndex() const { return pImpl ? pImpl->index : 0; }
 
   bool Interface::isUp() const {
     return pImpl ? (pImpl->flags & IFF_UP) != 0 : false;
   }
 
   int Interface::getMtu() const {
-    if (!pImpl) return 1500;
-    
+    if (!pImpl)
+      return 1500;
+
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) return 1500;
-    
+    if (sock < 0)
+      return 1500;
+
     struct ifreq ifr;
     std::memset(&ifr, 0, sizeof(ifr));
     std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
-    
+
     int mtu = 1500;
     if (ioctl(sock, SIOCGIFMTU, &ifr) == 0) {
       mtu = ifr.ifr_mtu;
     }
-    
+
     close(sock);
     return mtu;
   }
@@ -243,7 +243,8 @@ namespace libfreebsdnet::interface {
     return ""; // Default implementation returns empty string
   }
 
-  bool Interface::setAliasAddress(const libfreebsdnet::types::Address &address) {
+  bool
+  Interface::setAliasAddress(const libfreebsdnet::types::Address &address) {
     if (!address.isValid()) {
       return false;
     }
@@ -306,7 +307,8 @@ namespace libfreebsdnet::interface {
     return true;
   }
 
-  bool Interface::removeAliasAddress(const libfreebsdnet::types::Address &address) {
+  bool
+  Interface::removeAliasAddress(const libfreebsdnet::types::Address &address) {
     if (!address.isValid()) {
       return false;
     }
@@ -611,7 +613,8 @@ namespace libfreebsdnet::interface {
     std::strncpy(ifra.ifra_name, getName().c_str(), IFNAMSIZ - 1);
 
     // Parse IP address
-    struct sockaddr_in *sin = reinterpret_cast<struct sockaddr_in *>(&ifra.ifra_addr);
+    struct sockaddr_in *sin =
+        reinterpret_cast<struct sockaddr_in *>(&ifra.ifra_addr);
     sin->sin_family = AF_INET;
     if (inet_pton(AF_INET, address.c_str(), &sin->sin_addr) != 1) {
       close(sock);
@@ -771,7 +774,8 @@ namespace libfreebsdnet::interface {
 
     if (ioctl(sock, SIOCIFDESTROY, &ifr) < 0) {
       if (pImpl) {
-        pImpl->lastError = "Failed to destroy interface: " + std::string(strerror(errno));
+        pImpl->lastError =
+            "Failed to destroy interface: " + std::string(strerror(errno));
       }
       close(sock);
       return false;
@@ -811,20 +815,48 @@ namespace libfreebsdnet::interface {
     // Media subtype
     int subtype = IFM_SUBTYPE(ifmr.ifm_current);
     switch (subtype) {
-      case IFM_10_T: info.subtype = MediaSubtype::ETHERNET_10_T; break;
-      case IFM_10_2: info.subtype = MediaSubtype::ETHERNET_10_2; break;
-      case IFM_10_5: info.subtype = MediaSubtype::ETHERNET_10_5; break;
-      case IFM_100_TX: info.subtype = MediaSubtype::ETHERNET_100_TX; break;
-      case IFM_100_FX: info.subtype = MediaSubtype::ETHERNET_100_FX; break;
-      case IFM_1000_T: info.subtype = MediaSubtype::ETHERNET_1000_T; break;
-      case IFM_1000_SX: info.subtype = MediaSubtype::ETHERNET_1000_SX; break;
-      case IFM_1000_LX: info.subtype = MediaSubtype::ETHERNET_1000_LX; break;
-      case IFM_10G_T: info.subtype = MediaSubtype::ETHERNET_10G_T; break;
-      case IFM_10G_SR: info.subtype = MediaSubtype::ETHERNET_10G_SR; break;
-      case IFM_10G_LR: info.subtype = MediaSubtype::ETHERNET_10G_LR; break;
-      case IFM_2500_T: info.subtype = MediaSubtype::ETHERNET_2500_T; break;
-      case IFM_5000_T: info.subtype = MediaSubtype::ETHERNET_5000_T; break;
-      default: info.subtype = MediaSubtype::UNKNOWN; break;
+    case IFM_10_T:
+      info.subtype = MediaSubtype::ETHERNET_10_T;
+      break;
+    case IFM_10_2:
+      info.subtype = MediaSubtype::ETHERNET_10_2;
+      break;
+    case IFM_10_5:
+      info.subtype = MediaSubtype::ETHERNET_10_5;
+      break;
+    case IFM_100_TX:
+      info.subtype = MediaSubtype::ETHERNET_100_TX;
+      break;
+    case IFM_100_FX:
+      info.subtype = MediaSubtype::ETHERNET_100_FX;
+      break;
+    case IFM_1000_T:
+      info.subtype = MediaSubtype::ETHERNET_1000_T;
+      break;
+    case IFM_1000_SX:
+      info.subtype = MediaSubtype::ETHERNET_1000_SX;
+      break;
+    case IFM_1000_LX:
+      info.subtype = MediaSubtype::ETHERNET_1000_LX;
+      break;
+    case IFM_10G_T:
+      info.subtype = MediaSubtype::ETHERNET_10G_T;
+      break;
+    case IFM_10G_SR:
+      info.subtype = MediaSubtype::ETHERNET_10G_SR;
+      break;
+    case IFM_10G_LR:
+      info.subtype = MediaSubtype::ETHERNET_10G_LR;
+      break;
+    case IFM_2500_T:
+      info.subtype = MediaSubtype::ETHERNET_2500_T;
+      break;
+    case IFM_5000_T:
+      info.subtype = MediaSubtype::ETHERNET_5000_T;
+      break;
+    default:
+      info.subtype = MediaSubtype::UNKNOWN;
+      break;
     }
 
     // Media options
@@ -848,17 +880,27 @@ namespace libfreebsdnet::interface {
   std::vector<Capability> Interface::getCapabilityList() const {
     std::vector<Capability> caps;
     uint32_t capFlags = getCapabilities();
-    
-    if (capFlags & IFCAP_RXCSUM) caps.push_back(Capability::RXCSUM);
-    if (capFlags & IFCAP_TXCSUM) caps.push_back(Capability::TXCSUM);
-    if (capFlags & IFCAP_VLAN_MTU) caps.push_back(Capability::VLAN_MTU);
-    if (capFlags & IFCAP_VLAN_HWTAGGING) caps.push_back(Capability::VLAN_HWTAGGING);
-    if (capFlags & IFCAP_VLAN_HWCSUM) caps.push_back(Capability::VLAN_HWCSUM);
-    if (capFlags & IFCAP_WOL_MAGIC) caps.push_back(Capability::WOL_MAGIC);
-    if (capFlags & IFCAP_LINKSTATE) caps.push_back(Capability::LINKSTATE);
-    if (capFlags & IFCAP_TSO4) caps.push_back(Capability::TSO4);
-    if (capFlags & IFCAP_TSO6) caps.push_back(Capability::TSO6);
-    if (capFlags & IFCAP_LRO) caps.push_back(Capability::LRO);
+
+    if (capFlags & IFCAP_RXCSUM)
+      caps.push_back(Capability::RXCSUM);
+    if (capFlags & IFCAP_TXCSUM)
+      caps.push_back(Capability::TXCSUM);
+    if (capFlags & IFCAP_VLAN_MTU)
+      caps.push_back(Capability::VLAN_MTU);
+    if (capFlags & IFCAP_VLAN_HWTAGGING)
+      caps.push_back(Capability::VLAN_HWTAGGING);
+    if (capFlags & IFCAP_VLAN_HWCSUM)
+      caps.push_back(Capability::VLAN_HWCSUM);
+    if (capFlags & IFCAP_WOL_MAGIC)
+      caps.push_back(Capability::WOL_MAGIC);
+    if (capFlags & IFCAP_LINKSTATE)
+      caps.push_back(Capability::LINKSTATE);
+    if (capFlags & IFCAP_TSO4)
+      caps.push_back(Capability::TSO4);
+    if (capFlags & IFCAP_TSO6)
+      caps.push_back(Capability::TSO6);
+    if (capFlags & IFCAP_LRO)
+      caps.push_back(Capability::LRO);
 
     return caps;
   }
@@ -866,23 +908,39 @@ namespace libfreebsdnet::interface {
   std::vector<Flag> Interface::getFlags() const {
     std::vector<Flag> flags;
     int flagBits = pImpl ? pImpl->flags : 0;
-    
-    if (flagBits & IFF_UP) flags.push_back(Flag::UP);
-    if (flagBits & IFF_BROADCAST) flags.push_back(Flag::BROADCAST);
-    if (flagBits & IFF_DEBUG) flags.push_back(Flag::DEBUG);
-    if (flagBits & IFF_LOOPBACK) flags.push_back(Flag::LOOPBACK);
-    if (flagBits & IFF_POINTOPOINT) flags.push_back(Flag::POINTOPOINT);
-    if (flagBits & IFF_RUNNING) flags.push_back(Flag::RUNNING);
-    if (flagBits & IFF_NOARP) flags.push_back(Flag::NOARP);
-    if (flagBits & IFF_PROMISC) flags.push_back(Flag::PROMISC);
-    if (flagBits & IFF_ALLMULTI) flags.push_back(Flag::ALLMULTI);
-    if (flagBits & IFF_OACTIVE) flags.push_back(Flag::OACTIVE);
-    if (flagBits & IFF_SIMPLEX) flags.push_back(Flag::SIMPLEX);
-    if (flagBits & IFF_LINK0) flags.push_back(Flag::LINK0);
-    if (flagBits & IFF_LINK1) flags.push_back(Flag::LINK1);
-    if (flagBits & IFF_LINK2) flags.push_back(Flag::LINK2);
-    if (flagBits & IFF_MULTICAST) flags.push_back(Flag::MULTICAST);
-    if (flagBits & IFF_DRV_RUNNING) flags.push_back(Flag::DRV_RUNNING);
+
+    if (flagBits & IFF_UP)
+      flags.push_back(Flag::UP);
+    if (flagBits & IFF_BROADCAST)
+      flags.push_back(Flag::BROADCAST);
+    if (flagBits & IFF_DEBUG)
+      flags.push_back(Flag::DEBUG);
+    if (flagBits & IFF_LOOPBACK)
+      flags.push_back(Flag::LOOPBACK);
+    if (flagBits & IFF_POINTOPOINT)
+      flags.push_back(Flag::POINTOPOINT);
+    if (flagBits & IFF_RUNNING)
+      flags.push_back(Flag::RUNNING);
+    if (flagBits & IFF_NOARP)
+      flags.push_back(Flag::NOARP);
+    if (flagBits & IFF_PROMISC)
+      flags.push_back(Flag::PROMISC);
+    if (flagBits & IFF_ALLMULTI)
+      flags.push_back(Flag::ALLMULTI);
+    if (flagBits & IFF_OACTIVE)
+      flags.push_back(Flag::OACTIVE);
+    if (flagBits & IFF_SIMPLEX)
+      flags.push_back(Flag::SIMPLEX);
+    if (flagBits & IFF_LINK0)
+      flags.push_back(Flag::LINK0);
+    if (flagBits & IFF_LINK1)
+      flags.push_back(Flag::LINK1);
+    if (flagBits & IFF_LINK2)
+      flags.push_back(Flag::LINK2);
+    if (flagBits & IFF_MULTICAST)
+      flags.push_back(Flag::MULTICAST);
+    if (flagBits & IFF_DRV_RUNNING)
+      flags.push_back(Flag::DRV_RUNNING);
 
     return flags;
   }

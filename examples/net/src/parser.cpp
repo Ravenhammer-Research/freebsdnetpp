@@ -49,7 +49,8 @@ namespace net {
             return false;
           }
 
-          if (args[1] == "interfaces" || (args[1] == "interface" && args.size() == 2)) {
+          if (args[1] == "interfaces" ||
+              (args[1] == "interface" && args.size() == 2)) {
             return handleShowInterfaces(args);
           } else if (args[1] == "interface" && args.size() > 2) {
             if (args[2] == "type" && args.size() > 3) {

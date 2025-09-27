@@ -48,17 +48,27 @@ namespace libfreebsdnet::interface {
 
   // Base class method implementations
   std::string PfsyncInterface::getName() const { return Interface::getName(); }
-  unsigned int PfsyncInterface::getIndex() const { return Interface::getIndex(); }
-  InterfaceType PfsyncInterface::getType() const { return InterfaceType::PFSYNC; }
-  std::vector<Flag> PfsyncInterface::getFlags() const { return Interface::getFlags(); }
-  bool PfsyncInterface::setFlags(int flags) { return Interface::setFlags(flags); }
+  unsigned int PfsyncInterface::getIndex() const {
+    return Interface::getIndex();
+  }
+  InterfaceType PfsyncInterface::getType() const {
+    return InterfaceType::PFSYNC;
+  }
+  std::vector<Flag> PfsyncInterface::getFlags() const {
+    return Interface::getFlags();
+  }
+  bool PfsyncInterface::setFlags(int flags) {
+    return Interface::setFlags(flags);
+  }
   bool PfsyncInterface::bringUp() { return Interface::bringUp(); }
   bool PfsyncInterface::bringDown() { return Interface::bringDown(); }
   bool PfsyncInterface::isUp() const { return Interface::isUp(); }
 
   int PfsyncInterface::getMtu() const { return Interface::getMtu(); }
   bool PfsyncInterface::setMtu(int mtu) { return Interface::setMtu(mtu); }
-  std::string PfsyncInterface::getLastError() const { return Interface::getLastError(); }
+  std::string PfsyncInterface::getLastError() const {
+    return Interface::getLastError();
+  }
   int PfsyncInterface::getFib() const { return Interface::getFib(); }
   bool PfsyncInterface::setFib(int fib) { return Interface::setFib(fib); }
 
@@ -135,10 +145,7 @@ namespace libfreebsdnet::interface {
     return true;
   }
 
-
-  int PfsyncInterface::getMedia() const {
-    return Interface::getMedia();
-  }
+  int PfsyncInterface::getMedia() const { return Interface::getMedia(); }
 
   bool PfsyncInterface::setMedia(int media) {
     return Interface::setMedia(media);
@@ -187,7 +194,6 @@ namespace libfreebsdnet::interface {
   bool PfsyncInterface::removeFromGroup(const std::string &groupName) {
     return Interface::removeFromGroup(groupName);
   }
-
 
   bool PfsyncInterface::setPhysicalAddress(const std::string &address) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -314,11 +320,11 @@ namespace libfreebsdnet::interface {
     return false;
   }
 
-
   bool PfsyncInterface::destroy() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-      pImpl->lastError = "Failed to create socket: " + std::string(strerror(errno));
+      pImpl->lastError =
+          "Failed to create socket: " + std::string(strerror(errno));
       return false;
     }
 
@@ -327,7 +333,8 @@ namespace libfreebsdnet::interface {
     std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
 
     if (ioctl(sock, SIOCIFDESTROY, &ifr) < 0) {
-      pImpl->lastError = "Failed to destroy interface: " + std::string(strerror(errno));
+      pImpl->lastError =
+          "Failed to destroy interface: " + std::string(strerror(errno));
       close(sock);
       return false;
     }
@@ -335,6 +342,5 @@ namespace libfreebsdnet::interface {
     close(sock);
     return true;
   }
-
 
 } // namespace libfreebsdnet::interface

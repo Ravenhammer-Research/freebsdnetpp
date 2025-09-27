@@ -34,9 +34,7 @@ namespace libfreebsdnet::interface {
   TunnelInterface::~TunnelInterface() = default;
 
   // Base class method implementations (call base class)
-  int TunnelInterface::getMedia() const {
-    return Interface::getMedia();
-  }
+  int TunnelInterface::getMedia() const { return Interface::getMedia(); }
 
   bool TunnelInterface::setMedia(int media) {
     return Interface::setMedia(media);
@@ -136,13 +134,6 @@ namespace libfreebsdnet::interface {
     return false;
   }
 
-
-
-
-
-
-
-
   int TunnelInterface::getTunnelFib() const {
     // Get tunnel FIB assignment using SIOCGTUNFIB
     // Try AF_INET first, fall back to AF_LOCAL if that fails
@@ -214,6 +205,5 @@ namespace libfreebsdnet::interface {
     close(sock);
     return true;
   }
-
 
 } // namespace libfreebsdnet::interface

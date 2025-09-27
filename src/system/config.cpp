@@ -7,11 +7,11 @@
  * @year 2024
  */
 
-#include <system/config.hpp>
-#include <sys/sysctl.h>
-#include <sys/types.h>
 #include <cstring>
 #include <sstream>
+#include <sys/sysctl.h>
+#include <sys/types.h>
+#include <system/config.hpp>
 
 namespace libfreebsdnet::system {
 
@@ -21,56 +21,55 @@ namespace libfreebsdnet::system {
 
     Impl() : lastError("") {}
 
-    template<typename T>
+    template <typename T>
     T getSysctlValue(const char *name, T defaultValue) const {
       size_t size = sizeof(T);
       T value = defaultValue;
-      
+
       int mib[CTL_MAXNAME];
       size_t miblen = CTL_MAXNAME;
-      
+
       if (sysctlnametomib(name, mib, &miblen) < 0) {
         return defaultValue;
       }
-      
+
       if (sysctl(mib, miblen, &value, &size, nullptr, 0) < 0) {
         return defaultValue;
       }
-      
+
       return value;
     }
 
-    std::string getSysctlString(const char *name, const std::string &defaultValue = "") const {
+    std::string getSysctlString(const char *name,
+                                const std::string &defaultValue = "") const {
       size_t size = 0;
-      
+
       int mib[CTL_MAXNAME];
       size_t miblen = CTL_MAXNAME;
-      
+
       if (sysctlnametomib(name, mib, &miblen) < 0) {
         return defaultValue;
       }
-      
+
       // Get required buffer size
       if (sysctl(mib, miblen, nullptr, &size, nullptr, 0) < 0) {
         return defaultValue;
       }
-      
+
       if (size == 0) {
         return defaultValue;
       }
-      
+
       std::string result(size - 1, '\0'); // -1 to exclude null terminator
-      
+
       if (sysctl(mib, miblen, &result[0], &size, nullptr, 0) < 0) {
         return defaultValue;
       }
-      
+
       return result;
     }
 
-    int getFibs() const {
-      return getSysctlValue("net.fibs", 1);
-    }
+    int getFibs() const { return getSysctlValue("net.fibs", 1); }
 
     bool getAddAddrAllFibs() const {
       return getSysctlValue("net.add_addr_allfibs", 0) != 0;
@@ -114,7 +113,7 @@ namespace libfreebsdnet::system {
 
     std::map<std::string, std::string> getAllConfig() const {
       std::map<std::string, std::string> config;
-      
+
       config["net.fibs"] = std::to_string(getFibs());
       config["net.add_addr_allfibs"] = getAddAddrAllFibs() ? "1" : "0";
       config["net.inet.ip.forwarding"] = getIpForwarding() ? "1" : "0";
@@ -125,8 +124,9 @@ namespace libfreebsdnet::system {
       config["net.route.algo.inet.algo"] = getRouteInetAlgo();
       config["net.route.algo.inet6.algo"] = getRouteInet6Algo();
       config["net.route.netisr_maxqlen"] = std::to_string(getNetisrMaxqlen());
-      config["net.route.algo.fib_max_sync_delay_ms"] = std::to_string(getFibMaxSyncDelay());
-      
+      config["net.route.algo.fib_max_sync_delay_ms"] =
+          std::to_string(getFibMaxSyncDelay());
+
       return config;
     }
   };
@@ -135,9 +135,7 @@ namespace libfreebsdnet::system {
 
   SystemConfig::~SystemConfig() = default;
 
-  int SystemConfig::getFibs() const {
-    return pImpl->getFibs();
-  }
+  int SystemConfig::getFibs() const { return pImpl->getFibs(); }
 
   bool SystemConfig::getAddAddrAllFibs() const {
     return pImpl->getAddAddrAllFibs();
@@ -183,8 +181,6 @@ namespace libfreebsdnet::system {
     return pImpl->getAllConfig();
   }
 
-  std::string SystemConfig::getLastError() const {
-    return pImpl->lastError;
-  }
+  std::string SystemConfig::getLastError() const { return pImpl->lastError; }
 
 } // namespace libfreebsdnet::system

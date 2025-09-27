@@ -146,7 +146,6 @@ namespace libfreebsdnet::interface {
     std::vector<std::string> getGroups() const override;
     bool addToGroup(const std::string &groupName) override;
     bool removeFromGroup(const std::string &groupName) override;
-
   };
 
 } // namespace libfreebsdnet::interface

@@ -36,7 +36,6 @@ namespace libfreebsdnet::interface {
      */
     ~EthernetInterface() override;
 
-
     // Interface base class methods
     std::string getName() const override;
     unsigned int getIndex() const override;

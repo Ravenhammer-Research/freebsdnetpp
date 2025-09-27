@@ -155,7 +155,6 @@ namespace libfreebsdnet::interface {
     int getMaxAddresses() const;
     int getInterfaceCost(const std::string &interfaceName) const;
     int getRootPathCost() const;
-
   };
 
 } // namespace libfreebsdnet::interface

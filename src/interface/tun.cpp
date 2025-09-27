@@ -13,9 +13,9 @@
 #include <ifaddrs.h>
 #include <interface/tun.hpp>
 #include <net/if.h>
-#include <net/if_tun.h>
 #include <net/if_mib.h>
 #include <net/if_private.h>
+#include <net/if_tun.h>
 #include <netinet/in.h>
 #include <stdexcept>
 #include <sys/ioctl.h>
@@ -38,11 +38,14 @@ namespace libfreebsdnet::interface {
     bool persistent;
 
     Impl(const std::string &name, unsigned int index, int flags)
-        : name(name), index(index), flags(flags), unit(-1), owner(-1), group(-1), persistent(false) {}
+        : name(name), index(index), flags(flags), unit(-1), owner(-1),
+          group(-1), persistent(false) {}
   };
 
-  TunInterface::TunInterface(const std::string &name, unsigned int index, int flags)
-      : TunnelInterface(name, index, flags), pImpl(std::make_unique<Impl>(name, index, flags)) {}
+  TunInterface::TunInterface(const std::string &name, unsigned int index,
+                             int flags)
+      : TunnelInterface(name, index, flags),
+        pImpl(std::make_unique<Impl>(name, index, flags)) {}
 
   TunInterface::~TunInterface() = default;
 
@@ -50,9 +53,7 @@ namespace libfreebsdnet::interface {
     return InterfaceType::TUNNEL; // TUN is a type of tunnel
   }
 
-  int TunInterface::getUnit() const {
-    return pImpl->unit;
-  }
+  int TunInterface::getUnit() const { return pImpl->unit; }
 
   bool TunInterface::setUnit(int unit) {
     if (unit < 0) {
@@ -63,9 +64,7 @@ namespace libfreebsdnet::interface {
     return true; // Unit setting would require specific TUN ioctls
   }
 
-  int TunInterface::getOwner() const {
-    return pImpl->owner;
-  }
+  int TunInterface::getOwner() const { return pImpl->owner; }
 
   bool TunInterface::setOwner(int uid) {
     if (uid < 0) {
@@ -76,9 +75,7 @@ namespace libfreebsdnet::interface {
     return true; // Owner setting would require specific TUN ioctls
   }
 
-  int TunInterface::getGroup() const {
-    return pImpl->group;
-  }
+  int TunInterface::getGroup() const { return pImpl->group; }
 
   bool TunInterface::setGroup(int gid) {
     if (gid < 0) {
@@ -89,9 +86,7 @@ namespace libfreebsdnet::interface {
     return true; // Group setting would require specific TUN ioctls
   }
 
-  bool TunInterface::isPersistent() const {
-    return pImpl->persistent;
-  }
+  bool TunInterface::isPersistent() const { return pImpl->persistent; }
 
   bool TunInterface::setPersistent(bool persistent) {
     pImpl->persistent = persistent;
@@ -99,12 +94,14 @@ namespace libfreebsdnet::interface {
   }
 
   int TunInterface::getTunnelFib() const {
-    throw std::runtime_error("TUN interfaces do not support tunnel FIB operations");
+    throw std::runtime_error(
+        "TUN interfaces do not support tunnel FIB operations");
   }
 
   bool TunInterface::setTunnelFib(int fib) {
     (void)fib; // Suppress unused parameter warning
-    throw std::runtime_error("TUN interfaces do not support tunnel FIB operations");
+    throw std::runtime_error(
+        "TUN interfaces do not support tunnel FIB operations");
   }
 
   // Group management methods (call base class)
@@ -121,13 +118,9 @@ namespace libfreebsdnet::interface {
   }
 
   // Base class method implementations (call base class)
-  int TunInterface::getMedia() const {
-    return Interface::getMedia();
-  }
+  int TunInterface::getMedia() const { return Interface::getMedia(); }
 
-  bool TunInterface::setMedia(int media) {
-    return Interface::setMedia(media);
-  }
+  bool TunInterface::setMedia(int media) { return Interface::setMedia(media); }
 
   int TunInterface::getMediaStatus() const {
     return Interface::getMediaStatus();

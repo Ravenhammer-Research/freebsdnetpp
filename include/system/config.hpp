@@ -10,8 +10,8 @@
 #ifndef LIBFREEBSDNET_SYSTEM_CONFIG_HPP
 #define LIBFREEBSDNET_SYSTEM_CONFIG_HPP
 
-#include <string>
 #include <map>
+#include <string>
 
 namespace libfreebsdnet::system {
 

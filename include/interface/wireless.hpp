@@ -82,7 +82,6 @@ namespace libfreebsdnet::interface {
     std::string getMacAddress() const override;
     bool setMacAddress(const std::string &macAddress) override;
 
-
     bool destroy() override;
 
     // IEEE 802.11-specific methods

@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <ifaddrs.h>
 #include <interface/bridge.hpp>
+#include <jail.h>
 #include <net/ethernet.h>
 #include <net/if.h>
 #include <net/if_bridgevar.h>
@@ -24,12 +25,10 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/sockio.h>
-#include <jail.h>
 #include <sys/sysctl.h>
 #include <unistd.h>
 
 namespace libfreebsdnet::interface {
-
 
   BridgeInterface::BridgeInterface(const std::string &name, unsigned int index,
                                    int flags)
@@ -39,45 +38,39 @@ namespace libfreebsdnet::interface {
 
   std::string BridgeInterface::getName() const { return Interface::getName(); }
 
-  unsigned int BridgeInterface::getIndex() const { return Interface::getIndex(); }
+  unsigned int BridgeInterface::getIndex() const {
+    return Interface::getIndex();
+  }
 
   InterfaceType BridgeInterface::getType() const {
     return InterfaceType::BRIDGE;
   }
 
-  std::vector<Flag> BridgeInterface::getFlags() const { return Interface::getFlags(); }
+  std::vector<Flag> BridgeInterface::getFlags() const {
+    return Interface::getFlags();
+  }
 
   bool BridgeInterface::setFlags(int flags) {
     return Interface::setFlags(flags);
   }
 
-  bool BridgeInterface::bringUp() {
-    return Interface::bringUp();
-  }
+  bool BridgeInterface::bringUp() { return Interface::bringUp(); }
 
-  bool BridgeInterface::bringDown() {
-    return Interface::bringDown();
-  }
+  bool BridgeInterface::bringDown() { return Interface::bringDown(); }
 
   bool BridgeInterface::isUp() const { return Interface::isUp(); }
 
-  int BridgeInterface::getMtu() const {
-    return Interface::getMtu();
+  int BridgeInterface::getMtu() const { return Interface::getMtu(); }
+
+  bool BridgeInterface::setMtu(int mtu) { return Interface::setMtu(mtu); }
+
+  std::string BridgeInterface::getLastError() const {
+    return Interface::getLastError();
   }
 
-  bool BridgeInterface::setMtu(int mtu) {
-    return Interface::setMtu(mtu);
-  }
+  int BridgeInterface::getFib() const { return Interface::getFib(); }
 
-  std::string BridgeInterface::getLastError() const { return Interface::getLastError(); }
-
-  int BridgeInterface::getFib() const {
-    return Interface::getFib();
-  }
-
-  bool BridgeInterface::setFib(int fib) {
-    return Interface::setFib(fib);
-  }
+  bool BridgeInterface::setFib(int fib) { return Interface::setFib(fib); }
 
   bool BridgeInterface::addInterface(const std::string &interfaceName) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -205,13 +198,13 @@ namespace libfreebsdnet::interface {
     ifd.ifd_cmd = BRDGPARAM;
     ifd.ifd_len = sizeof(struct ifbropreq);
     ifd.ifd_data = malloc(ifd.ifd_len);
-    
+
     int result = -1;
     if (ioctl(sock, SIOCGDRVSPEC, &ifd) == 0) {
-      struct ifbropreq *ifbrop = static_cast<struct ifbropreq*>(ifd.ifd_data);
+      struct ifbropreq *ifbrop = static_cast<struct ifbropreq *>(ifd.ifd_data);
       result = ifbrop->ifbop_priority;
     }
-    
+
     free(ifd.ifd_data);
     close(sock);
     return result;
@@ -233,7 +226,7 @@ namespace libfreebsdnet::interface {
     struct ifdrv ifd;
     std::memset(&ifd, 0, sizeof(ifd));
     std::strncpy(ifd.ifd_name, getName().c_str(), IFNAMSIZ - 1);
-    ifd.ifd_cmd = BRDGGTO;  // Get cache timeout
+    ifd.ifd_cmd = BRDGGTO; // Get cache timeout
     ifd.ifd_len = sizeof(struct ifbrparam);
 
     struct ifbrparam param;
@@ -249,10 +242,7 @@ namespace libfreebsdnet::interface {
     return agingTime;
   }
 
-
-  int BridgeInterface::getMedia() const {
-    return Interface::getMedia();
-  }
+  int BridgeInterface::getMedia() const { return Interface::getMedia(); }
 
   bool BridgeInterface::setMedia(int media) {
     return Interface::setMedia(media);
@@ -577,11 +567,11 @@ namespace libfreebsdnet::interface {
     return true;
   }
 
-
   bool BridgeInterface::destroy() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-      pImpl->lastError = "Failed to create socket: " + std::string(strerror(errno));
+      pImpl->lastError =
+          "Failed to create socket: " + std::string(strerror(errno));
       return false;
     }
 
@@ -590,7 +580,8 @@ namespace libfreebsdnet::interface {
     std::strncpy(ifr.ifr_name, getName().c_str(), IFNAMSIZ - 1);
 
     if (ioctl(sock, SIOCIFDESTROY, &ifr) < 0) {
-      pImpl->lastError = "Failed to destroy interface: " + std::string(strerror(errno));
+      pImpl->lastError =
+          "Failed to destroy interface: " + std::string(strerror(errno));
       close(sock);
       return false;
     }
@@ -611,13 +602,13 @@ namespace libfreebsdnet::interface {
     ifd.ifd_cmd = BRDGPARAM;
     ifd.ifd_len = sizeof(struct ifbropreq);
     ifd.ifd_data = malloc(ifd.ifd_len);
-    
+
     int result = -1;
     if (ioctl(sock, SIOCGDRVSPEC, &ifd) == 0) {
-      struct ifbropreq *ifbrop = static_cast<struct ifbropreq*>(ifd.ifd_data);
+      struct ifbropreq *ifbrop = static_cast<struct ifbropreq *>(ifd.ifd_data);
       result = ifbrop->ifbop_hellotime;
     }
-    
+
     free(ifd.ifd_data);
     close(sock);
     return result;
@@ -635,13 +626,13 @@ namespace libfreebsdnet::interface {
     ifd.ifd_cmd = BRDGPARAM;
     ifd.ifd_len = sizeof(struct ifbropreq);
     ifd.ifd_data = malloc(ifd.ifd_len);
-    
+
     int result = -1;
     if (ioctl(sock, SIOCGDRVSPEC, &ifd) == 0) {
-      struct ifbropreq *ifbrop = static_cast<struct ifbropreq*>(ifd.ifd_data);
+      struct ifbropreq *ifbrop = static_cast<struct ifbropreq *>(ifd.ifd_data);
       result = ifbrop->ifbop_fwddelay;
     }
-    
+
     free(ifd.ifd_data);
     close(sock);
     return result;
@@ -659,13 +650,13 @@ namespace libfreebsdnet::interface {
     ifd.ifd_cmd = BRDGPARAM;
     ifd.ifd_len = sizeof(struct ifbropreq);
     ifd.ifd_data = malloc(ifd.ifd_len);
-    
+
     int result = -1;
     if (ioctl(sock, SIOCGDRVSPEC, &ifd) == 0) {
-      struct ifbropreq *ifbrop = static_cast<struct ifbropreq*>(ifd.ifd_data);
+      struct ifbropreq *ifbrop = static_cast<struct ifbropreq *>(ifd.ifd_data);
       result = ifbrop->ifbop_protocol;
     }
-    
+
     free(ifd.ifd_data);
     close(sock);
     return result;
@@ -683,19 +674,20 @@ namespace libfreebsdnet::interface {
     ifd.ifd_cmd = BRDGGCACHE;
     ifd.ifd_len = sizeof(struct ifbrparam);
     ifd.ifd_data = malloc(ifd.ifd_len);
-    
+
     int result = -1;
     if (ioctl(sock, SIOCGDRVSPEC, &ifd) == 0) {
-      struct ifbrparam *ifbrp = static_cast<struct ifbrparam*>(ifd.ifd_data);
+      struct ifbrparam *ifbrp = static_cast<struct ifbrparam *>(ifd.ifd_data);
       result = ifbrp->ifbrp_csize;
     }
-    
+
     free(ifd.ifd_data);
     close(sock);
     return result;
   }
 
-  int BridgeInterface::getInterfaceCost(const std::string &interfaceName) const {
+  int BridgeInterface::getInterfaceCost(
+      const std::string &interfaceName) const {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
       return -1;
@@ -705,18 +697,19 @@ namespace libfreebsdnet::interface {
     struct ifbifconf members;
     char *buf = nullptr;
     int result = -1;
-    
-    for (size_t len = 8192; (buf = static_cast<char*>(realloc(buf, len))) != nullptr; len *= 2) {
+
+    for (size_t len = 8192;
+         (buf = static_cast<char *>(realloc(buf, len))) != nullptr; len *= 2) {
       members.ifbic_buf = buf;
       members.ifbic_len = len;
-      
+
       struct ifdrv ifd;
       std::memset(&ifd, 0, sizeof(ifd));
       std::strncpy(ifd.ifd_name, getName().c_str(), IFNAMSIZ - 1);
       ifd.ifd_cmd = BRDGGIFS;
       ifd.ifd_len = sizeof(members);
       ifd.ifd_data = &members;
-      
+
       if (ioctl(sock, SIOCGDRVSPEC, &ifd) == 0) {
         if ((members.ifbic_len + sizeof(*members.ifbic_req)) < len) {
           break;
@@ -727,7 +720,7 @@ namespace libfreebsdnet::interface {
         return -1;
       }
     }
-    
+
     if (buf != nullptr) {
       // Search for the specific interface in the member list
       size_t member_count = members.ifbic_len / sizeof(*members.ifbic_req);
@@ -740,7 +733,7 @@ namespace libfreebsdnet::interface {
       }
       free(buf);
     }
-    
+
     close(sock);
     return result;
   }
@@ -757,13 +750,13 @@ namespace libfreebsdnet::interface {
     ifd.ifd_cmd = BRDGPARAM;
     ifd.ifd_len = sizeof(struct ifbropreq);
     ifd.ifd_data = malloc(ifd.ifd_len);
-    
+
     int result = -1;
     if (ioctl(sock, SIOCGDRVSPEC, &ifd) == 0) {
-      struct ifbropreq *ifbrop = static_cast<struct ifbropreq*>(ifd.ifd_data);
+      struct ifbropreq *ifbrop = static_cast<struct ifbropreq *>(ifd.ifd_data);
       result = ifbrop->ifbop_root_path_cost;
     }
-    
+
     free(ifd.ifd_data);
     close(sock);
     return result;

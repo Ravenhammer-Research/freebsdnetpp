@@ -1,7 +1,8 @@
 /**
  * @file interface/vnet.hpp
  * @brief VNET interface mix-in class
- * @details Mix-in class for interfaces that support VNET (Virtual Network) functionality
+ * @details Mix-in class for interfaces that support VNET (Virtual Network)
+ * functionality
  *
  * @author paigeadelethompson
  * @year 2024
@@ -33,7 +34,8 @@ namespace libfreebsdnet::interface {
 
     /**
      * @brief Get VNET jail name
-     * @return Jail name if in a VNET, empty string if not in a VNET or jail not found
+     * @return Jail name if in a VNET, empty string if not in a VNET or jail not
+     * found
      */
     virtual std::string getVnetJailName() const = 0;
 

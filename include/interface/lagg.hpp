@@ -232,7 +232,6 @@ namespace libfreebsdnet::interface {
      * @return true on success, false on error
      */
     bool setLacpSystemPriority(int priority);
-
   };
 
 } // namespace libfreebsdnet::interface

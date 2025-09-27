@@ -51,31 +51,25 @@ namespace libfreebsdnet::interface {
 
   InterfaceType VlanInterface::getType() const { return InterfaceType::VLAN; }
 
-  std::vector<Flag> VlanInterface::getFlags() const { return Interface::getFlags(); }
-
-  bool VlanInterface::setFlags(int flags) {
-    return Interface::setFlags(flags);
+  std::vector<Flag> VlanInterface::getFlags() const {
+    return Interface::getFlags();
   }
 
-  bool VlanInterface::bringUp() {
-    return Interface::bringUp();
-  }
+  bool VlanInterface::setFlags(int flags) { return Interface::setFlags(flags); }
 
-  bool VlanInterface::bringDown() {
-    return Interface::bringDown();
-  }
+  bool VlanInterface::bringUp() { return Interface::bringUp(); }
+
+  bool VlanInterface::bringDown() { return Interface::bringDown(); }
 
   bool VlanInterface::isUp() const { return Interface::isUp(); }
 
-  int VlanInterface::getMtu() const {
-    return Interface::getMtu();
-  }
+  int VlanInterface::getMtu() const { return Interface::getMtu(); }
 
-  bool VlanInterface::setMtu(int mtu) {
-    return Interface::setMtu(mtu);
-  }
+  bool VlanInterface::setMtu(int mtu) { return Interface::setMtu(mtu); }
 
-  std::string VlanInterface::getLastError() const { return Interface::getLastError(); }
+  std::string VlanInterface::getLastError() const {
+    return Interface::getLastError();
+  }
 
   int VlanInterface::getVlanId() const {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -186,21 +180,13 @@ namespace libfreebsdnet::interface {
     return getVlanId() > 0 && !getParentInterface().empty();
   }
 
-  int VlanInterface::getFib() const {
-    return Interface::getFib();
-  }
+  int VlanInterface::getFib() const { return Interface::getFib(); }
 
-  bool VlanInterface::setFib(int fib) {
-    return Interface::setFib(fib);
-  }
+  bool VlanInterface::setFib(int fib) { return Interface::setFib(fib); }
 
-  int VlanInterface::getMedia() const {
-    return Interface::getMedia();
-  }
+  int VlanInterface::getMedia() const { return Interface::getMedia(); }
 
-  bool VlanInterface::setMedia(int media) {
-    return Interface::setMedia(media);
-  }
+  bool VlanInterface::setMedia(int media) { return Interface::setMedia(media); }
 
   int VlanInterface::getMediaStatus() const {
     return Interface::getMediaStatus();
@@ -506,11 +492,11 @@ namespace libfreebsdnet::interface {
     return true;
   }
 
-
   bool VlanInterface::destroy() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-      pImpl->lastError = "Failed to create socket: " + std::string(strerror(errno));
+      pImpl->lastError =
+          "Failed to create socket: " + std::string(strerror(errno));
       return false;
     }
 
@@ -519,7 +505,8 @@ namespace libfreebsdnet::interface {
     std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
 
     if (ioctl(sock, SIOCIFDESTROY, &ifr) < 0) {
-      pImpl->lastError = "Failed to destroy interface: " + std::string(strerror(errno));
+      pImpl->lastError =
+          "Failed to destroy interface: " + std::string(strerror(errno));
       close(sock);
       return false;
     }

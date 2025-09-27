@@ -37,7 +37,8 @@ namespace net {
         << std::endl;
     std::cout << "  show route stats [fib <num>]       Show routing statistics"
               << std::endl;
-    std::cout << "  show system                         Show system network configuration"
+    std::cout << "  show system                         Show system network "
+                 "configuration"
               << std::endl;
     std::cout << "  set interface <name> fib <num>     Set interface FIB"
               << std::endl;

@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <ifaddrs.h>
 #include <interface/ethernet.hpp>
+#include <iomanip>
 #include <jail.h>
 #include <net/ethernet.h>
 #include <net/if.h>
@@ -21,14 +22,13 @@
 #include <net/if_mib.h>
 #include <net/if_private.h>
 #include <netinet/in.h>
+#include <sstream>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/sockio.h>
 #include <sys/sysctl.h>
 #include <unistd.h>
 #include <vector>
-#include <sstream>
-#include <iomanip>
 
 namespace libfreebsdnet::interface {
 
@@ -45,21 +45,32 @@ namespace libfreebsdnet::interface {
 
   EthernetInterface::EthernetInterface(const std::string &name,
                                        unsigned int index, int flags)
-      : Interface(name, index, flags), pImpl(std::make_unique<Impl>(name, index, flags)) {}
+      : Interface(name, index, flags),
+        pImpl(std::make_unique<Impl>(name, index, flags)) {}
 
   EthernetInterface::~EthernetInterface() = default;
 
   // Base class method implementations
-  std::string EthernetInterface::getName() const { return Interface::getName(); }
-  unsigned int EthernetInterface::getIndex() const { return Interface::getIndex(); }
-  InterfaceType EthernetInterface::getType() const { return InterfaceType::ETHERNET; }
-  bool EthernetInterface::setFlags(int flags) { return Interface::setFlags(flags); }
+  std::string EthernetInterface::getName() const {
+    return Interface::getName();
+  }
+  unsigned int EthernetInterface::getIndex() const {
+    return Interface::getIndex();
+  }
+  InterfaceType EthernetInterface::getType() const {
+    return InterfaceType::ETHERNET;
+  }
+  bool EthernetInterface::setFlags(int flags) {
+    return Interface::setFlags(flags);
+  }
   bool EthernetInterface::bringUp() { return Interface::bringUp(); }
   bool EthernetInterface::bringDown() { return Interface::bringDown(); }
   bool EthernetInterface::isUp() const { return Interface::isUp(); }
   int EthernetInterface::getMtu() const { return Interface::getMtu(); }
   bool EthernetInterface::setMtu(int mtu) { return Interface::setMtu(mtu); }
-  std::string EthernetInterface::getLastError() const { return Interface::getLastError(); }
+  std::string EthernetInterface::getLastError() const {
+    return Interface::getLastError();
+  }
   int EthernetInterface::getFib() const { return Interface::getFib(); }
   bool EthernetInterface::setFib(int fib) { return Interface::setFib(fib); }
 
@@ -119,10 +130,7 @@ namespace libfreebsdnet::interface {
     return (pImpl->flags & IFF_PROMISC) != 0;
   }
 
-
-  int EthernetInterface::getMedia() const {
-    return Interface::getMedia();
-  }
+  int EthernetInterface::getMedia() const { return Interface::getMedia(); }
 
   bool EthernetInterface::setMedia(int media) {
     return Interface::setMedia(media);
@@ -271,11 +279,11 @@ namespace libfreebsdnet::interface {
     return Interface::setMacAddress(macAddress);
   }
 
-
   bool EthernetInterface::destroy() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-      pImpl->lastError = "Failed to create socket: " + std::string(strerror(errno));
+      pImpl->lastError =
+          "Failed to create socket: " + std::string(strerror(errno));
       return false;
     }
 
@@ -284,7 +292,8 @@ namespace libfreebsdnet::interface {
     std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
 
     if (ioctl(sock, SIOCIFDESTROY, &ifr) < 0) {
-      pImpl->lastError = "Failed to destroy interface: " + std::string(strerror(errno));
+      pImpl->lastError =
+          "Failed to destroy interface: " + std::string(strerror(errno));
       close(sock);
       return false;
     }
@@ -304,6 +313,5 @@ namespace libfreebsdnet::interface {
   std::vector<Flag> EthernetInterface::getFlags() const {
     return Interface::getFlags();
   }
-
 
 } // namespace libfreebsdnet::interface

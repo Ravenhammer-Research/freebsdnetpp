@@ -7,13 +7,15 @@
  * @year 2024
  */
 
-#include <sys/types.h>
-#include <stdint.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
-#include <sys/socket.h>
+#include <net/if.h>
+#include <net/if_dl.h>
 #include <net/route.h>
+#include <netinet/in.h>
 #include <routing/entry.hpp>
+#include <stdint.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 namespace libfreebsdnet::routing {
 
@@ -22,8 +24,9 @@ namespace libfreebsdnet::routing {
                                      const std::string &gw,
                                      const std::string &iface, uint16_t flags,
                                      uint32_t metric)
-      : destination(dest), gateway(gw), interface(iface), netmask(""), flags(flags),
-        metric(metric), mtu(0), lastUpdated(std::chrono::system_clock::now()) {}
+      : destination(dest), gateway(gw), interface(iface), netmask(""),
+        flags(flags), metric(metric), mtu(0),
+        lastUpdated(std::chrono::system_clock::now()) {}
 
   // RoutingEntry implementation
   class RoutingEntry::Impl {

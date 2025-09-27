@@ -50,7 +50,6 @@ namespace libfreebsdnet::interface {
      */
     ~TunnelInterface() override;
 
-
     /**
      * @brief Get local endpoint address
      * @return Local endpoint address or empty string on error
@@ -118,7 +117,6 @@ namespace libfreebsdnet::interface {
     bool setMacAddress(const std::string &macAddress) override;
 
     bool destroy() override;
-
   };
 
 } // namespace libfreebsdnet::interface

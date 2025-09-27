@@ -56,11 +56,21 @@ namespace libfreebsdnet::interface {
   bool WirelessInterface::isValid() const { return !pImpl->name.empty(); }
 
   // Base class method implementations
-  std::string WirelessInterface::getName() const { return Interface::getName(); }
-  unsigned int WirelessInterface::getIndex() const { return Interface::getIndex(); }
-  std::vector<Flag> WirelessInterface::getFlags() const { return Interface::getFlags(); }
-  bool WirelessInterface::setFlags(int flags) { return Interface::setFlags(flags); }
-  std::string WirelessInterface::getLastError() const { return Interface::getLastError(); }
+  std::string WirelessInterface::getName() const {
+    return Interface::getName();
+  }
+  unsigned int WirelessInterface::getIndex() const {
+    return Interface::getIndex();
+  }
+  std::vector<Flag> WirelessInterface::getFlags() const {
+    return Interface::getFlags();
+  }
+  bool WirelessInterface::setFlags(int flags) {
+    return Interface::setFlags(flags);
+  }
+  std::string WirelessInterface::getLastError() const {
+    return Interface::getLastError();
+  }
 
   bool WirelessInterface::bringUp() { return Interface::bringUp(); }
   bool WirelessInterface::bringDown() { return Interface::bringDown(); }
@@ -72,9 +82,7 @@ namespace libfreebsdnet::interface {
   int WirelessInterface::getFib() const { return Interface::getFib(); }
   bool WirelessInterface::setFib(int fib) { return Interface::setFib(fib); }
 
-  int WirelessInterface::getMedia() const {
-    return Interface::getMedia();
-  }
+  int WirelessInterface::getMedia() const { return Interface::getMedia(); }
 
   bool WirelessInterface::setMedia(int media) {
     return Interface::setMedia(media);
@@ -226,7 +234,6 @@ namespace libfreebsdnet::interface {
   bool WirelessInterface::setMacAddress(const std::string &macAddress) {
     return Interface::setMacAddress(macAddress);
   }
-
 
   // IEEE 802.11-specific methods
   int WirelessInterface::getChannel() const {
@@ -449,7 +456,8 @@ namespace libfreebsdnet::interface {
   bool WirelessInterface::destroy() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-      pImpl->lastError = "Failed to create socket: " + std::string(strerror(errno));
+      pImpl->lastError =
+          "Failed to create socket: " + std::string(strerror(errno));
       return false;
     }
 
@@ -458,7 +466,8 @@ namespace libfreebsdnet::interface {
     std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
 
     if (ioctl(sock, SIOCIFDESTROY, &ifr) < 0) {
-      pImpl->lastError = "Failed to destroy interface: " + std::string(strerror(errno));
+      pImpl->lastError =
+          "Failed to destroy interface: " + std::string(strerror(errno));
       close(sock);
       return false;
     }
@@ -466,6 +475,5 @@ namespace libfreebsdnet::interface {
     close(sock);
     return true;
   }
-
 
 } // namespace libfreebsdnet::interface

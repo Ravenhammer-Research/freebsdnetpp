@@ -58,14 +58,15 @@ namespace net {
     }
 
     // Helper function to center text in a field
-    auto centerText = [](const std::string& text, size_t width) {
+    auto centerText = [](const std::string &text, size_t width) {
       if (text.length() >= width) {
         return text;
       }
       size_t padding = width - text.length();
       size_t leftPadding = padding / 2;
       size_t rightPadding = padding - leftPadding;
-      return std::string(leftPadding, ' ') + text + std::string(rightPadding, ' ');
+      return std::string(leftPadding, ' ') + text +
+             std::string(rightPadding, ' ');
     };
 
     // Print header

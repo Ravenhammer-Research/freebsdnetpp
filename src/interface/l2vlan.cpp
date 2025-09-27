@@ -54,10 +54,18 @@ namespace libfreebsdnet::interface {
 
   // Base class method implementations
   std::string L2VlanInterface::getName() const { return Interface::getName(); }
-  unsigned int L2VlanInterface::getIndex() const { return Interface::getIndex(); }
-  std::vector<Flag> L2VlanInterface::getFlags() const { return Interface::getFlags(); }
-  bool L2VlanInterface::setFlags(int flags) { return Interface::setFlags(flags); }
-  std::string L2VlanInterface::getLastError() const { return Interface::getLastError(); }
+  unsigned int L2VlanInterface::getIndex() const {
+    return Interface::getIndex();
+  }
+  std::vector<Flag> L2VlanInterface::getFlags() const {
+    return Interface::getFlags();
+  }
+  bool L2VlanInterface::setFlags(int flags) {
+    return Interface::setFlags(flags);
+  }
+  std::string L2VlanInterface::getLastError() const {
+    return Interface::getLastError();
+  }
 
   bool L2VlanInterface::bringUp() { return Interface::bringUp(); }
   bool L2VlanInterface::bringDown() { return Interface::bringDown(); }
@@ -174,7 +182,6 @@ namespace libfreebsdnet::interface {
   bool L2VlanInterface::removeFromGroup(const std::string &groupName) {
     return Interface::removeFromGroup(groupName);
   }
-
 
   bool L2VlanInterface::setPhysicalAddress(const std::string &address) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -359,7 +366,6 @@ namespace libfreebsdnet::interface {
     return true;
   }
 
-
   // L2VLAN-specific methods
   std::string L2VlanInterface::getTrunkDevice() const {
     // This would require kernel-level access to VLAN_TRUNKDEV macro
@@ -426,7 +432,8 @@ namespace libfreebsdnet::interface {
   bool L2VlanInterface::destroy() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-      pImpl->lastError = "Failed to create socket: " + std::string(strerror(errno));
+      pImpl->lastError =
+          "Failed to create socket: " + std::string(strerror(errno));
       return false;
     }
 
@@ -435,7 +442,8 @@ namespace libfreebsdnet::interface {
     std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
 
     if (ioctl(sock, SIOCIFDESTROY, &ifr) < 0) {
-      pImpl->lastError = "Failed to destroy interface: " + std::string(strerror(errno));
+      pImpl->lastError =
+          "Failed to destroy interface: " + std::string(strerror(errno));
       close(sock);
       return false;
     }
@@ -443,6 +451,5 @@ namespace libfreebsdnet::interface {
     close(sock);
     return true;
   }
-
 
 } // namespace libfreebsdnet::interface

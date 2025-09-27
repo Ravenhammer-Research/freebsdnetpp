@@ -53,7 +53,7 @@ namespace libfreebsdnet::routing {
 
       // Get both IPv4 and IPv6 routes (like FreeBSD netstat does)
       std::vector<int> address_families = {AF_INET, AF_INET6};
-      
+
       for (int af : address_families) {
         // Use sysctl to get routing table for specific FIB and address family
         size_t len = 0;
@@ -308,6 +308,56 @@ namespace libfreebsdnet::routing {
     mutable std::string lastError_;
     libfreebsdnet::interface::Manager interface_manager;
 
+    std::string getNetmaskFromRoutingMessage(struct rt_msghdr *rtm) const {
+      char *ptr = reinterpret_cast<char *>(rtm + 1);
+      struct sockaddr *addr[RTAX_MAX] = {nullptr};
+
+      // First pass: collect all addresses
+      for (int i = 0; i < RTAX_MAX; i++) {
+        if (rtm->rtm_addrs & (1 << i)) {
+          addr[i] = reinterpret_cast<struct sockaddr *>(ptr);
+          ptr = reinterpret_cast<char *>(ptr) + SA_SIZE(addr[i]);
+        }
+      }
+
+      // Check if we have a netmask
+      if (addr[RTAX_NETMASK] != nullptr) {
+        struct sockaddr *mask_sa = addr[RTAX_NETMASK];
+        if (mask_sa->sa_family == AF_INET) {
+          struct sockaddr_in *sin = reinterpret_cast<struct sockaddr_in *>(mask_sa);
+          uint32_t mask = ntohl(sin->sin_addr.s_addr);
+          int prefix_length = 0;
+          if (mask == 0) {
+            prefix_length = 0; // Default route
+          } else {
+            while (mask & 0x80000000) {
+              prefix_length++;
+              mask <<= 1;
+            }
+          }
+          return std::to_string(prefix_length);
+        } else if (mask_sa->sa_family == AF_INET6) {
+          struct sockaddr_in6 *sin6 = reinterpret_cast<struct sockaddr_in6 *>(mask_sa);
+          // Calculate prefix length for IPv6 like netname6 does
+          int prefix_length = 0;
+          for (int j = 0; j < 16; j++) {
+            uint8_t byte = sin6->sin6_addr.s6_addr[j];
+            if (byte == 0xff) {
+              prefix_length += 8;
+            } else if (byte != 0) {
+              while (byte & 0x80) {
+                prefix_length++;
+                byte <<= 1;
+              }
+              break;
+            }
+          }
+          return std::to_string(prefix_length);
+        }
+      }
+      return "";
+    }
+
     std::unique_ptr<RoutingEntry>
     parseRoutingMessage(struct rt_msghdr *rtm) const {
       // Complete routing message parser handling all address types
@@ -356,7 +406,8 @@ namespace libfreebsdnet::routing {
               gateway_display = std::string(gw_str);
               if (sin6->sin6_scope_id > 0) {
                 // Add scope interface for IPv6 link-local addresses
-                auto iface = interface_manager.getInterface(sin6->sin6_scope_id);
+                auto iface =
+                    interface_manager.getInterface(sin6->sin6_scope_id);
                 if (iface) {
                   gateway_display += "%" + iface->getName();
                 }
@@ -375,10 +426,12 @@ namespace libfreebsdnet::routing {
                          mac[2], mac[3], mac[4], mac[5]);
                 gateway_display = std::string(mac_str);
               } else {
-                // Get interface name for link index and display as "ifname (#index)"
+                // Get interface name for link index and display as "ifname
+                // (#index)"
                 auto iface = interface_manager.getInterface(link_index);
                 if (iface) {
-                  gateway_display = iface->getName() + " (#" + std::to_string(link_index) + ")";
+                  gateway_display = iface->getName() + " (#" +
+                                    std::to_string(link_index) + ")";
                 } else {
                   gateway_display = "link#" + std::to_string(link_index);
                 }
@@ -430,7 +483,8 @@ namespace libfreebsdnet::routing {
               if (sdl->sdl_nlen > 0) {
                 interface = std::string(sdl->sdl_data, sdl->sdl_nlen);
               } else {
-                // If no interface name in sockaddr_dl, try to get it from index using manager
+                // If no interface name in sockaddr_dl, try to get it from index
+                // using manager
                 auto iface = interface_manager.getInterface(sdl->sdl_index);
                 if (iface) {
                   interface = iface->getName();
@@ -461,7 +515,8 @@ namespace libfreebsdnet::routing {
         }
       }
 
-      // For IPv6 routes, try to get interface from scope_id if interface is unknown
+      // For IPv6 routes, try to get interface from scope_id if interface is
+      // unknown
       if (interface == "unknown" && scope_id > 0) {
         auto iface = interface_manager.getInterface(scope_id);
         if (iface) {
@@ -469,29 +524,16 @@ namespace libfreebsdnet::routing {
         }
       }
 
-      // Handle IPv6 netmask if not present in routing message
-      if (netmask_display.empty() && std::string(dst_str).find(':') != std::string::npos) {
-        // Determine prefix length based on IPv6 address type
-        if (std::string(dst_str) == "::") {
-          netmask_display = "0"; // Default route
-        } else if (std::string(dst_str).find("::1") == 0) {
-          netmask_display = "128"; // Loopback
-        } else if (std::string(dst_str).find("::ffff:") == 0) {
-          netmask_display = "96"; // IPv4-mapped IPv6
-        } else if (std::string(dst_str).find("fe80::") == 0) {
-          netmask_display = "64"; // Link-local
-        } else if (std::string(dst_str).find("ff02::") == 0) {
-          netmask_display = "16"; // Multicast
-        } else {
-          netmask_display = "128"; // Host route
-        }
+      // Handle netmask if not present in routing message
+      if (netmask_display.empty()) {
+        netmask_display = getNetmaskFromRoutingMessage(rtm);
       }
-
 
       // Create routing entry info structure
       RoutingEntryInfo info;
       info.destination = destination_display;
-      info.gateway = gateway_display.empty() ? std::string(gw_str) : gateway_display;
+      info.gateway =
+          gateway_display.empty() ? std::string(gw_str) : gateway_display;
       info.interface = interface;
       info.netmask = netmask_display;
       info.flags = rtm->rtm_flags;

@@ -18,7 +18,6 @@
 
 namespace libfreebsdnet::interface {
 
-
   /**
    * @brief Network interface manager class
    * @details Provides high-level interface for managing network interfaces
@@ -50,50 +49,52 @@ namespace libfreebsdnet::interface {
 
     /**
      * @brief Get interface by name with specific type
-     * @tparam T Specific interface type (e.g., EthernetInterface, WirelessInterface)
+     * @tparam T Specific interface type (e.g., EthernetInterface,
+     * WirelessInterface)
      * @param name Interface name
      * @return Specific interface object or nullptr if not found or wrong type
      */
-    template<typename T>
+    template <typename T>
     std::unique_ptr<T> getInterface(const std::string &name) const {
       auto interface = getInterface(name);
       if (!interface) {
         return nullptr;
       }
-      
+
       // Try to cast to the specific type
-      T* specific = dynamic_cast<T*>(interface.get());
+      T *specific = dynamic_cast<T *>(interface.get());
       if (!specific) {
         return nullptr;
       }
-      
+
       // Release from the generic pointer and return the specific type
       interface.release();
-      return std::unique_ptr<T>(static_cast<T*>(specific));
+      return std::unique_ptr<T>(static_cast<T *>(specific));
     }
 
     /**
      * @brief Get interface by index with specific type
-     * @tparam T Specific interface type (e.g., EthernetInterface, WirelessInterface)
+     * @tparam T Specific interface type (e.g., EthernetInterface,
+     * WirelessInterface)
      * @param index Interface index
      * @return Specific interface object or nullptr if not found or wrong type
      */
-    template<typename T>
+    template <typename T>
     std::unique_ptr<T> getInterface(unsigned int index) const {
       auto interface = getInterface(index);
       if (!interface) {
         return nullptr;
       }
-      
+
       // Try to cast to the specific type
-      T* specific = dynamic_cast<T*>(interface.get());
+      T *specific = dynamic_cast<T *>(interface.get());
       if (!specific) {
         return nullptr;
       }
-      
+
       // Release from the generic pointer and return the specific type
       interface.release();
-      return std::unique_ptr<T>(static_cast<T*>(specific));
+      return std::unique_ptr<T>(static_cast<T *>(specific));
     }
 
     /**
@@ -139,7 +140,8 @@ namespace libfreebsdnet::interface {
      * @param flags Interface flags
      * @return Appropriate interface object or nullptr on error
      */
-    std::unique_ptr<Interface> createInterface(const std::string &name, unsigned int index, int flags);
+    std::unique_ptr<Interface> createInterface(const std::string &name,
+                                               unsigned int index, int flags);
 
     /**
      * @brief Create interface object based on interface type
@@ -149,7 +151,9 @@ namespace libfreebsdnet::interface {
      * @param type Interface type
      * @return Appropriate interface object or nullptr on error
      */
-    std::unique_ptr<Interface> createInterface(const std::string &name, unsigned int index, int flags, InterfaceType type);
+    std::unique_ptr<Interface> createInterface(const std::string &name,
+                                               unsigned int index, int flags,
+                                               InterfaceType type);
 
     /**
      * @brief Check if interface type is supported

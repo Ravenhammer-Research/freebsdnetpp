@@ -27,14 +27,13 @@
 
 namespace libfreebsdnet::interface {
 
-  GifInterface::GifInterface(const std::string &name, unsigned int index, int flags)
+  GifInterface::GifInterface(const std::string &name, unsigned int index,
+                             int flags)
       : TunnelInterface(name, index, flags) {}
 
   GifInterface::~GifInterface() = default;
 
-  InterfaceType GifInterface::getType() const {
-    return InterfaceType::GIF;
-  }
+  InterfaceType GifInterface::getType() const { return InterfaceType::GIF; }
 
   int GifInterface::getProtocol() const {
     // Default to IPv4 for now
@@ -65,14 +64,16 @@ namespace libfreebsdnet::interface {
       return "";
     }
 
-    const struct sockaddr_in *sin = reinterpret_cast<const struct sockaddr_in*>(&ifr.ifr_addr);
+    const struct sockaddr_in *sin =
+        reinterpret_cast<const struct sockaddr_in *>(&ifr.ifr_addr);
     if (sin->sin_family != AF_INET) {
       close(sock);
       return "";
     }
 
     char addr_str[INET_ADDRSTRLEN];
-    if (inet_ntop(AF_INET, &sin->sin_addr, addr_str, INET_ADDRSTRLEN) == nullptr) {
+    if (inet_ntop(AF_INET, &sin->sin_addr, addr_str, INET_ADDRSTRLEN) ==
+        nullptr) {
       close(sock);
       return "";
     }
@@ -98,9 +99,10 @@ namespace libfreebsdnet::interface {
     struct in_aliasreq addreq;
     std::memset(&addreq, 0, sizeof(addreq));
     std::strncpy(addreq.ifra_name, getName().c_str(), IFNAMSIZ - 1);
-    
+
     // Set the local address (source)
-    struct sockaddr_in *sin = reinterpret_cast<struct sockaddr_in*>(&addreq.ifra_addr);
+    struct sockaddr_in *sin =
+        reinterpret_cast<struct sockaddr_in *>(&addreq.ifra_addr);
     sin->sin_family = AF_INET;
     sin->sin_addr = addr;
 
@@ -129,14 +131,16 @@ namespace libfreebsdnet::interface {
       return "";
     }
 
-    const struct sockaddr_in *sin = reinterpret_cast<const struct sockaddr_in*>(&ifr.ifr_addr);
+    const struct sockaddr_in *sin =
+        reinterpret_cast<const struct sockaddr_in *>(&ifr.ifr_addr);
     if (sin->sin_family != AF_INET) {
       close(sock);
       return "";
     }
 
     char addr_str[INET_ADDRSTRLEN];
-    if (inet_ntop(AF_INET, &sin->sin_addr, addr_str, INET_ADDRSTRLEN) == nullptr) {
+    if (inet_ntop(AF_INET, &sin->sin_addr, addr_str, INET_ADDRSTRLEN) ==
+        nullptr) {
       close(sock);
       return "";
     }
@@ -162,9 +166,10 @@ namespace libfreebsdnet::interface {
     struct in_aliasreq addreq;
     std::memset(&addreq, 0, sizeof(addreq));
     std::strncpy(addreq.ifra_name, getName().c_str(), IFNAMSIZ - 1);
-    
+
     // Set the remote address (destination)
-    struct sockaddr_in *sin = reinterpret_cast<struct sockaddr_in*>(&addreq.ifra_dstaddr);
+    struct sockaddr_in *sin =
+        reinterpret_cast<struct sockaddr_in *>(&addreq.ifra_dstaddr);
     sin->sin_family = AF_INET;
     sin->sin_addr = addr;
 
@@ -225,13 +230,9 @@ namespace libfreebsdnet::interface {
   }
 
   // Base class method implementations (call base class)
-  int GifInterface::getMedia() const {
-    return Interface::getMedia();
-  }
+  int GifInterface::getMedia() const { return Interface::getMedia(); }
 
-  bool GifInterface::setMedia(int media) {
-    return Interface::setMedia(media);
-  }
+  bool GifInterface::setMedia(int media) { return Interface::setMedia(media); }
 
   int GifInterface::getMediaStatus() const {
     return Interface::getMediaStatus();

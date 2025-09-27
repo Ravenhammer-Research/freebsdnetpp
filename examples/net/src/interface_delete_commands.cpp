@@ -1,22 +1,22 @@
 /**
  * @file interface_delete_commands.cpp
  * @brief Net tool interface delete command implementations
- * @details Implementation of interface delete-related command handlers for the net
- * tool
+ * @details Implementation of interface delete-related command handlers for the
+ * net tool
  *
  * @author paigeadelethompson
  * @year 2024
  */
 
-#include <interface/wireless.hpp>
 #include <interface/bridge.hpp>
 #include <interface/lagg.hpp>
-#include <system/config.hpp>
+#include <interface/wireless.hpp>
 #include <iostream>
-#include <sstream>
 #include <net/if_types.h>
 #include <net/if_var.h>
 #include <net_tool.hpp>
+#include <sstream>
+#include <system/config.hpp>
 
 namespace net {
 
@@ -76,8 +76,7 @@ namespace net {
           printSuccess("Destroyed interface " + name);
           return true;
         } else {
-          printError("Failed to destroy interface: " +
-                     iface->getLastError());
+          printError("Failed to destroy interface: " + iface->getLastError());
           return false;
         }
       }

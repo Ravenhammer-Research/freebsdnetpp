@@ -38,11 +38,14 @@ namespace libfreebsdnet::interface {
     bool learning;
 
     Impl(const std::string &name, unsigned int index, int flags)
-        : name(name), index(index), flags(flags), vni(-1), port(4789), ttl(64), learning(true) {}
+        : name(name), index(index), flags(flags), vni(-1), port(4789), ttl(64),
+          learning(true) {}
   };
 
-  VxlanInterface::VxlanInterface(const std::string &name, unsigned int index, int flags)
-      : TunnelInterface(name, index, flags), pImpl(std::make_unique<Impl>(name, index, flags)) {}
+  VxlanInterface::VxlanInterface(const std::string &name, unsigned int index,
+                                 int flags)
+      : TunnelInterface(name, index, flags),
+        pImpl(std::make_unique<Impl>(name, index, flags)) {}
 
   VxlanInterface::~VxlanInterface() = default;
 
@@ -50,9 +53,7 @@ namespace libfreebsdnet::interface {
     return InterfaceType::TUNNEL; // VXLAN is a type of tunnel
   }
 
-  int VxlanInterface::getVni() const {
-    return pImpl->vni;
-  }
+  int VxlanInterface::getVni() const { return pImpl->vni; }
 
   bool VxlanInterface::setVni(int vni) {
     if (vni < 0 || vni > 16777215) { // VNI is 24-bit
@@ -78,9 +79,7 @@ namespace libfreebsdnet::interface {
     return true; // Group address setting would require specific VXLAN ioctls
   }
 
-  int VxlanInterface::getPort() const {
-    return pImpl->port;
-  }
+  int VxlanInterface::getPort() const { return pImpl->port; }
 
   bool VxlanInterface::setPort(int port) {
     if (port < 1 || port > 65535) {
@@ -91,9 +90,7 @@ namespace libfreebsdnet::interface {
     return true; // Port setting would require specific VXLAN ioctls
   }
 
-  int VxlanInterface::getTtl() const {
-    return pImpl->ttl;
-  }
+  int VxlanInterface::getTtl() const { return pImpl->ttl; }
 
   bool VxlanInterface::setTtl(int ttl) {
     if (ttl < 0 || ttl > 255) {
@@ -104,9 +101,7 @@ namespace libfreebsdnet::interface {
     return true; // TTL setting would require specific VXLAN ioctls
   }
 
-  bool VxlanInterface::isLearningEnabled() const {
-    return pImpl->learning;
-  }
+  bool VxlanInterface::isLearningEnabled() const { return pImpl->learning; }
 
   bool VxlanInterface::setLearning(bool enabled) {
     pImpl->learning = enabled;
@@ -127,9 +122,7 @@ namespace libfreebsdnet::interface {
   }
 
   // Base class method implementations (call base class)
-  int VxlanInterface::getMedia() const {
-    return Interface::getMedia();
-  }
+  int VxlanInterface::getMedia() const { return Interface::getMedia(); }
 
   bool VxlanInterface::setMedia(int media) {
     return Interface::setMedia(media);

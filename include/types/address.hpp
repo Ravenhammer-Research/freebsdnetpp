@@ -10,27 +10,24 @@
 #ifndef LIBFREEBSDNET_TYPES_ADDRESS_HPP
 #define LIBFREEBSDNET_TYPES_ADDRESS_HPP
 
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <string>
 #include <vector>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 
 namespace libfreebsdnet::types {
 
   /**
    * @brief Network address class
-   * @details Represents a network address with utilities for parsing and manipulation
+   * @details Represents a network address with utilities for parsing and
+   * manipulation
    */
   class Address {
   public:
     /**
      * @brief Address family enumeration
      */
-    enum class Family {
-      IPv4,
-      IPv6,
-      UNKNOWN
-    };
+    enum class Family { IPv4, IPv6, UNKNOWN };
 
     /**
      * @brief Default constructor
@@ -135,8 +132,8 @@ namespace libfreebsdnet::types {
      * @param prefixLen Output prefix length
      * @return true if parsing successful, false otherwise
      */
-    static bool parseAddress(const std::string &addressString, 
-                            std::string &ip, int &prefixLen);
+    static bool parseAddress(const std::string &addressString, std::string &ip,
+                             int &prefixLen);
 
     /**
      * @brief Convert prefix length to netmask
@@ -153,8 +150,8 @@ namespace libfreebsdnet::types {
      * @param family Address family
      * @return Broadcast address as string
      */
-    static std::string calculateBroadcast(const std::string &ip, 
-                                         int prefixLen, Family family);
+    static std::string calculateBroadcast(const std::string &ip, int prefixLen,
+                                          Family family);
 
   private:
     std::string ip_;

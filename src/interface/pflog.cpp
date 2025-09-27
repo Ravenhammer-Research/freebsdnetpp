@@ -47,17 +47,25 @@ namespace libfreebsdnet::interface {
 
   // Base class method implementations
   std::string PflogInterface::getName() const { return Interface::getName(); }
-  unsigned int PflogInterface::getIndex() const { return Interface::getIndex(); }
+  unsigned int PflogInterface::getIndex() const {
+    return Interface::getIndex();
+  }
   InterfaceType PflogInterface::getType() const { return InterfaceType::PFLOG; }
-  std::vector<Flag> PflogInterface::getFlags() const { return Interface::getFlags(); }
-  bool PflogInterface::setFlags(int flags) { return Interface::setFlags(flags); }
+  std::vector<Flag> PflogInterface::getFlags() const {
+    return Interface::getFlags();
+  }
+  bool PflogInterface::setFlags(int flags) {
+    return Interface::setFlags(flags);
+  }
   bool PflogInterface::bringUp() { return Interface::bringUp(); }
   bool PflogInterface::bringDown() { return Interface::bringDown(); }
   bool PflogInterface::isUp() const { return Interface::isUp(); }
 
   int PflogInterface::getMtu() const { return Interface::getMtu(); }
   bool PflogInterface::setMtu(int mtu) { return Interface::setMtu(mtu); }
-  std::string PflogInterface::getLastError() const { return Interface::getLastError(); }
+  std::string PflogInterface::getLastError() const {
+    return Interface::getLastError();
+  }
   int PflogInterface::getFib() const { return Interface::getFib(); }
   bool PflogInterface::setFib(int fib) { return Interface::setFib(fib); }
 
@@ -75,10 +83,7 @@ namespace libfreebsdnet::interface {
     return true; // Rule number setting would require specific PFLOG ioctls
   }
 
-
-  int PflogInterface::getMedia() const {
-    return Interface::getMedia();
-  }
+  int PflogInterface::getMedia() const { return Interface::getMedia(); }
 
   bool PflogInterface::setMedia(int media) {
     return Interface::setMedia(media);
@@ -127,7 +132,6 @@ namespace libfreebsdnet::interface {
   bool PflogInterface::removeFromGroup(const std::string &groupName) {
     return Interface::removeFromGroup(groupName);
   }
-
 
   bool PflogInterface::setPhysicalAddress(const std::string &address) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -254,11 +258,11 @@ namespace libfreebsdnet::interface {
     return false;
   }
 
-
   bool PflogInterface::destroy() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-      pImpl->lastError = "Failed to create socket: " + std::string(strerror(errno));
+      pImpl->lastError =
+          "Failed to create socket: " + std::string(strerror(errno));
       return false;
     }
 
@@ -267,7 +271,8 @@ namespace libfreebsdnet::interface {
     std::strncpy(ifr.ifr_name, pImpl->name.c_str(), IFNAMSIZ - 1);
 
     if (ioctl(sock, SIOCIFDESTROY, &ifr) < 0) {
-      pImpl->lastError = "Failed to destroy interface: " + std::string(strerror(errno));
+      pImpl->lastError =
+          "Failed to destroy interface: " + std::string(strerror(errno));
       close(sock);
       return false;
     }
@@ -275,6 +280,5 @@ namespace libfreebsdnet::interface {
     close(sock);
     return true;
   }
-
 
 } // namespace libfreebsdnet::interface

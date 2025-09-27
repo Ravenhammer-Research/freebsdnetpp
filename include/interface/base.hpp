@@ -14,8 +14,8 @@
 #include <memory>
 #include <net/if.h>
 #include <string>
-#include <vector>
 #include <types/address.hpp>
+#include <vector>
 
 namespace libfreebsdnet::interface {
 
@@ -29,7 +29,7 @@ namespace libfreebsdnet::interface {
     PPP,
     SLIP,
     TUNNEL,
-    GIF,             // Generic IP-in-IP tunnel
+    GIF, // Generic IP-in-IP tunnel
     BRIDGE,
     VLAN,
     WIRELESS, // IEEE 802.11 wireless
@@ -52,10 +52,7 @@ namespace libfreebsdnet::interface {
   /**
    * @brief Media type enumeration
    */
-  enum class MediaType {
-    UNKNOWN,
-    ETHERNET
-  };
+  enum class MediaType { UNKNOWN, ETHERNET };
 
   /**
    * @brief Media subtype enumeration
@@ -80,11 +77,7 @@ namespace libfreebsdnet::interface {
   /**
    * @brief Media option enumeration
    */
-  enum class MediaOption {
-    FULL_DUPLEX,
-    HALF_DUPLEX,
-    AUTO_SELECT
-  };
+  enum class MediaOption { FULL_DUPLEX, HALF_DUPLEX, AUTO_SELECT };
 
   /**
    * @brief Capability enumeration
@@ -319,7 +312,6 @@ namespace libfreebsdnet::interface {
      */
     virtual bool removeFromGroup(const std::string &groupName) = 0;
 
-
     /**
      * @brief Set physical address for this interface
      * @param address Physical address to set
@@ -404,7 +396,8 @@ namespace libfreebsdnet::interface {
      * @param address Address object to remove
      * @return true on success, false on error
      */
-    virtual bool removeAliasAddress(const libfreebsdnet::types::Address &address);
+    virtual bool
+    removeAliasAddress(const libfreebsdnet::types::Address &address);
 
     /**
      * @brief Remove alias IP address from this interface
@@ -412,7 +405,6 @@ namespace libfreebsdnet::interface {
      * @return true on success, false on error
      */
     virtual bool removeAliasAddress(const std::string &addressString);
-
 
     /**
      * @brief Destroy this interface
@@ -426,15 +418,15 @@ namespace libfreebsdnet::interface {
       unsigned int index;
       int flags;
       std::string lastError;
-      
+
       Impl(const std::string &name, unsigned int index, int flags)
-        : name(name), index(index), flags(flags) {}
+          : name(name), index(index), flags(flags) {}
     };
-    
+
     std::unique_ptr<Impl> pImpl;
     Interface() = default;
     Interface(const std::string &name, unsigned int index, int flags)
-      : pImpl(std::make_unique<Impl>(name, index, flags)) {}
+        : pImpl(std::make_unique<Impl>(name, index, flags)) {}
     Interface(const Interface &) = delete;
     Interface &operator=(const Interface &) = delete;
     Interface(Interface &&) = default;

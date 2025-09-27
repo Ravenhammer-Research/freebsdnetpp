@@ -30,22 +30,23 @@ namespace net {
       }
 
       std::vector<std::vector<std::string>> data;
-      std::vector<std::string> headers = {"Destination", "Netmask", "Scope", "Gateway", "Flags", "Interface"};
+      std::vector<std::string> headers = {
+          "Destination", "Netmask", "Scope", "Gateway", "Flags", "Interface"};
 
       for (const auto &entry : entries) {
         std::vector<std::string> row;
-        
+
         // Use CIDR notation for network routes, no CIDR for host routes
         std::string destination = entry->getDestination();
         std::string scope_interface = "";
-        
+
         // Extract scope interface from IPv6 addresses
         if (destination.find('%') != std::string::npos) {
           size_t scope_pos = destination.find('%');
           scope_interface = destination.substr(scope_pos + 1);
           destination = destination.substr(0, scope_pos);
         }
-        
+
         if (entry->isNetwork() && destination.find('/') == std::string::npos) {
           // Add default CIDR based on address family
           if (destination.find(':') != std::string::npos) {
@@ -65,14 +66,15 @@ namespace net {
               destination = "0.0.0.0/0"; // Default route
             } else if (destination.find("127.") == 0) {
               destination += "/32"; // Loopback
-            } else if (destination.find("10.") == 0 || destination.find("192.168.") == 0) {
+            } else if (destination.find("10.") == 0 ||
+                       destination.find("192.168.") == 0) {
               destination += "/24"; // Private networks
             } else {
               destination += "/32"; // Host route
             }
           }
         }
-        
+
         row.push_back(destination);
         row.push_back(entry->getNetmask());
         row.push_back(scope_interface);
