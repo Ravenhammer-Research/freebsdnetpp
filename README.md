@@ -469,6 +469,132 @@ routingTable->addEntry("0.0.0.0", "10.1.0.1", "lagg0", 1);
 routingTable->addEntry("2000::/3", "%lagg0", "", 6);
 ```
 
+## Net Tool Example Outputs
+
+### Interface Listing
+```bash
+$ sudo ./net -c "show interface"
+
+Flags Legend:
+  U = UP, R = RUNNING, B = BROADCAST, M = MULTICAST
+  L = LOOPBACK, P = POINTOPOINT, S = SIMPLEX, D = DRV_RUNNING
+  A = NOARP, p = PROMISC, a = ALLMULTI, o = OACTIVE
+  0/1/2 = LINK0/LINK1/LINK2
+
+  Name       Type      MTU            Address          Status FIB  Flags 
+-------------------------------------------------------------------------
+  re0      Ethernet    1500      10.255.255.242/24       UP    0  UBRSMD 
+  lo0      Loopback   16384           ::1/64             UP    0   ULRMD 
+                                    fe80::1/64                           
+                                   127.0.0.1/24                          
+ re0.1     Ethernet    1500            None             DOWN   0   BRSMD 
+ re0.16    Ethernet    1500      192.168.32.242/24       UP    0  UBRSMD 
+ re0.25    Ethernet    1500         10.1.0.2/24          UP    0  UBRSMD 
+epair0a  EthernetPair  1500            None             DOWN   0   BRSMD 
+epair0b  EthernetPair  1500            None             DOWN   0   BRSMD 
+  lo1      Loopback   16384         fe80::1/64           UP    1   ULRMD 
+                                   127.0.0.2/24                          
+  lo2      Loopback   16384            None             DOWN   2    LM   
+  lo3      Loopback   16384            None             DOWN   3    LM   
+bridge0     Bridge     1500            None              UP    0  UBRSMD 
+epair1a  EthernetPair  1500            None              UP    0  UBRSMD 
+epair1b  EthernetPair  1500            None             DOWN   0   BRSMD 
+epair2a  EthernetPair  1500            None              UP    0  UBRSMD 
+epair2b  EthernetPair  1500            None             DOWN   0   BRSMD 
+epair3a  EthernetPair  1500            None              UP    0  UBRSMD 
+epair3b  EthernetPair  1500            None             DOWN   0   BRSMD 
+epair4a  EthernetPair  9000            None              UP    0  UBRSMD 
+epair4b  EthernetPair  9000            None              UP    0  UBRSMD 
+ lagg0  LinkAggregate  9000 fe80::a2:f1ff:fee6:3d0a/64   UP    6  UBRSMD 
+  gif0  GenericTunnel  1280            None             DOWN   0    PM   
+```
+
+### Routing Table
+```bash
+$ sudo ./net -c "show route"
+
+Route Flags Legend:
+  U = UP, G = GATEWAY, H = HOST, R = REJECT, D = DYNAMIC
+  M = MODIFIED, N = DONE, X = XRESOLVE, L = LLINFO, S = STATIC
+  B = BLACKHOLE, 2 = PROTO2, 1 = PROTO1, 3 = PROTO3
+  F = FIXEDMTU, P = PINNED
+
+  Destination  Netmask Scope   Gateway   Flags Interface 
+---------------------------------------------------------
+    0.0.0.0       0            10.1.0.1   UGS    re0.25  
+   10.1.0.0       18         re0.25 (#5)   U     re0.25  
+   10.1.0.2                  re0.25 (#5)  UHS     lo0    
+ 10.255.255.0     24           re0 (#1)    U      re0    
+10.255.255.242                 re0 (#1)   UHS     lo0    
+   127.0.0.1                   lo0 (#2)    UH     lo0    
+   127.0.0.2                   lo1 (#8)    UH     lo1    
+192.168.32.128    25         re0.16 (#4)   U     re0.16  
+192.168.32.242               re0.16 (#4)  UHS     lo0    
+      ::          96           lo0 (#2)   URS     lo0    
+      ::1                      lo0 (#2)   UHS     lo0    
+::ffff:0.0.0.0    96           lo0 (#2)   URS     lo0    
+    fe80::        10           lo0 (#2)   URS     lo0    
+    fe80::        64    lo0    lo0 (#2)    U      lo0    
+    fe80::1             lo0    lo0 (#2)   UHS     lo0    
+    fe80::        64    lo1    lo1 (#8)    U      lo1    
+    fe80::1             lo1    lo0 (#2)   UHS     lo0    
+    ff02::        16           lo0 (#2)   URS     lo0    
+```
+
+### Interface Type Filtering
+```bash
+$ sudo ./net -c "show interface type bridge"
+
+Bridge Interfaces
+=================
+
+Interface Status FIB STP Members 
+---------------------------------
+ bridge0    UP    0  OFF epair1a 
+                         epair2a 
+                         epair3a 
+```
+
+```bash
+$ sudo ./net -c "show interface type lagg"
+
+LAGG Interfaces
+===============
+
+Interface Index Status  MTU FIB Protocol Hash  Ports  
+------------------------------------------------------
+  lagg0     20    UP   9000  6    lacp    l2  epair4a 
+                                          l3  epair4b 
+                                          l4          
+```
+
+### Individual Interface Details
+```bash
+$ sudo ./net -c "show interface bridge0"
+
+Interface: bridge0
+  Index:        11
+  Type:         Bridge
+  MTU:          1500
+  Status:       UP
+  Flags:        UP BROADCAST RUNNING MULTICAST 
+  FIB:          0
+  Media:        0x-1
+  Capabilities: 0x0
+  MAC:          58:9c:fc:10:ff:b4
+  Groups:        all, bridge, member, epair1a, epair2a, epair3a
+  Addresses:     None
+  Bridge Info:
+    STP:          OFF
+    Ageing:       1200s
+    Hello Time:   2s
+    Forward Delay:15s
+    Protocol:     RSTP
+    Max Addresses:2000
+    Priority:     32768
+    Root Cost:    0
+```
+
 ## Library Architecture
 
 ### Namespace Organization
@@ -647,8 +773,10 @@ net> help
 
 # Execute commands directly
 sudo ./net -c "show interface"
+sudo ./net -c "show route"
 sudo ./net -c "save state" | sudo ./net -c -
 ```
+
 
 ### Net Tool Features
 

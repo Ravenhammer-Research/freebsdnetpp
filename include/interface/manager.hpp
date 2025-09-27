@@ -48,6 +48,12 @@ namespace libfreebsdnet::interface {
     std::unique_ptr<Interface> getInterface(unsigned int index) const;
 
     /**
+     * @brief Get interface addresses using getifaddrs
+     * @return Vector of ifaddrs structures for all interfaces
+     */
+    std::vector<struct ifaddrs> getIfAddrs() const;
+
+    /**
      * @brief Get interface by name with specific type
      * @tparam T Specific interface type (e.g., EthernetInterface,
      * WirelessInterface)

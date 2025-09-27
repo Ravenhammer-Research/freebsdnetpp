@@ -11,7 +11,7 @@
 #include <cstdio>
 #include <cstring>
 #include <errno.h>
-#include <interface/manager.hpp>
+#include <ifaddrs.h>
 #include <net/if.h>
 #include <net/if_dl.h>
 #include <net/route.h>
@@ -29,7 +29,7 @@ namespace libfreebsdnet::routing {
 
   class RoutingTable::Impl {
   public:
-    Impl() : socket_fd(-1), lastError_(""), interface_manager() {
+    Impl() : socket_fd(-1), lastError_("") {
       socket_fd = socket(AF_ROUTE, SOCK_RAW, 0);
       if (socket_fd < 0) {
         lastError_ =
@@ -42,6 +42,33 @@ namespace libfreebsdnet::routing {
       if (socket_fd >= 0) {
         close(socket_fd);
       }
+    }
+
+    /**
+     * @brief Get interface name by index using getifaddrs
+     * @param index Interface index
+     * @return Interface name or empty string if not found
+     */
+    std::string getInterfaceName(int index) const {
+      struct ifaddrs *ifap, *ifa;
+      
+      if (getifaddrs(&ifap) != 0) {
+        return "";
+      }
+
+      for (ifa = ifap; ifa != nullptr; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_LINK) {
+          struct sockaddr_dl *sdl = (struct sockaddr_dl *)ifa->ifa_addr;
+          if (sdl->sdl_index == index) {
+            std::string name = ifa->ifa_name;
+            freeifaddrs(ifap);
+            return name;
+          }
+        }
+      }
+
+      freeifaddrs(ifap);
+      return "";
     }
 
     std::vector<std::unique_ptr<RoutingEntry>> getEntries() const {
@@ -306,7 +333,6 @@ namespace libfreebsdnet::routing {
   private:
     int socket_fd;
     mutable std::string lastError_;
-    libfreebsdnet::interface::Manager interface_manager;
 
     std::string getNetmaskFromRoutingMessage(struct rt_msghdr *rtm) const {
       char *ptr = reinterpret_cast<char *>(rtm + 1);
@@ -406,10 +432,9 @@ namespace libfreebsdnet::routing {
               gateway_display = std::string(gw_str);
               if (sin6->sin6_scope_id > 0) {
                 // Add scope interface for IPv6 link-local addresses
-                auto iface =
-                    interface_manager.getInterface(sin6->sin6_scope_id);
-                if (iface) {
-                  gateway_display += "%" + iface->getName();
+                std::string scope_name = getInterfaceName(sin6->sin6_scope_id);
+                if (!scope_name.empty()) {
+                  gateway_display += "%" + scope_name;
                 }
               }
             } else if (sa->sa_family == AF_LINK) {
@@ -428,10 +453,10 @@ namespace libfreebsdnet::routing {
               } else {
                 // Get interface name for link index and display as "ifname
                 // (#index)"
-                auto iface = interface_manager.getInterface(link_index);
-                if (iface) {
-                  gateway_display = iface->getName() + " (#" +
-                                    std::to_string(link_index) + ")";
+                std::string iface_name = getInterfaceName(link_index);
+                if (!iface_name.empty()) {
+                  gateway_display = iface_name + " (#" +
+                                   std::to_string(link_index) + ")";
                 } else {
                   gateway_display = "link#" + std::to_string(link_index);
                 }
@@ -484,10 +509,9 @@ namespace libfreebsdnet::routing {
                 interface = std::string(sdl->sdl_data, sdl->sdl_nlen);
               } else {
                 // If no interface name in sockaddr_dl, try to get it from index
-                // using manager
-                auto iface = interface_manager.getInterface(sdl->sdl_index);
-                if (iface) {
-                  interface = iface->getName();
+                std::string iface_name = getInterfaceName(sdl->sdl_index);
+                if (!iface_name.empty()) {
+                  interface = iface_name;
                 }
               }
               link_index = sdl->sdl_index;
@@ -509,26 +533,26 @@ namespace libfreebsdnet::routing {
       std::string destination_display = std::string(dst_str);
       if (scope_id > 0 && std::string(dst_str).find("fe80::") == 0) {
         // Add scope interface for IPv6 link-local destination addresses
-        auto iface = interface_manager.getInterface(scope_id);
-        if (iface) {
-          destination_display += "%" + iface->getName();
+        std::string scope_name = getInterfaceName(scope_id);
+        if (!scope_name.empty()) {
+          destination_display += "%" + scope_name;
         }
       }
 
       // Get interface from rtm_index like netstat does
       if (interface == "unknown" && rtm->rtm_index > 0) {
-        auto iface = interface_manager.getInterface(rtm->rtm_index);
-        if (iface) {
-          interface = iface->getName();
+        std::string iface_name = getInterfaceName(rtm->rtm_index);
+        if (!iface_name.empty()) {
+          interface = iface_name;
         }
       }
 
       // For IPv6 routes, try to get interface from scope_id if interface is
       // still unknown
       if (interface == "unknown" && scope_id > 0) {
-        auto iface = interface_manager.getInterface(scope_id);
-        if (iface) {
-          interface = iface->getName();
+        std::string iface_name = getInterfaceName(scope_id);
+        if (!iface_name.empty()) {
+          interface = iface_name;
         }
       }
 
@@ -539,9 +563,9 @@ namespace libfreebsdnet::routing {
 
       // For IPv6 routes, set gateway to interface name (#N) where N is the interface index
       if (gateway_display.empty() && std::string(dst_str).find(':') != std::string::npos && rtm->rtm_index > 0) {
-        auto iface = interface_manager.getInterface(rtm->rtm_index);
-        if (iface) {
-          gateway_display = iface->getName() + " (#" + std::to_string(rtm->rtm_index) + ")";
+        std::string iface_name = getInterfaceName(rtm->rtm_index);
+        if (!iface_name.empty()) {
+          gateway_display = iface_name + " (#" + std::to_string(rtm->rtm_index) + ")";
         } else {
           gateway_display = "if (#" + std::to_string(rtm->rtm_index) + ")";
         }

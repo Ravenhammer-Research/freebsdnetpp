@@ -427,4 +427,21 @@ namespace libfreebsdnet::interface {
     return InterfaceType::ETHERNET;
   }
 
+  std::vector<struct ifaddrs> Manager::getIfAddrs() const {
+    struct ifaddrs *ifap, *ifa;
+    std::vector<struct ifaddrs> result;
+
+    if (getifaddrs(&ifap) != 0) {
+      throw std::runtime_error("Failed to get interface addresses: " + std::string(strerror(errno)));
+    }
+
+    // Copy the ifaddrs structures to our vector
+    for (ifa = ifap; ifa != nullptr; ifa = ifa->ifa_next) {
+      result.push_back(*ifa);
+    }
+
+    freeifaddrs(ifap);
+    return result;
+  }
+
 } // namespace libfreebsdnet::interface
