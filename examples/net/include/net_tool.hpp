@@ -114,6 +114,9 @@ namespace net {
     bool handleShowInterfaceTypeEthernet(const std::vector<std::string> &args);
     bool handleSetInterface(const std::vector<std::string> &args);
     bool handleDeleteInterface(const std::vector<std::string> &args);
+    bool handleDeleteBridge(const std::vector<std::string> &args);
+    bool handleDeleteLagg(const std::vector<std::string> &args);
+    bool handleDeleteSystem(const std::vector<std::string> &args);
     bool handleShowRoute(const std::vector<std::string> &args);
     bool handleShowRouteInfo(const std::vector<std::string> &args);
     bool handleSetRoute(const std::vector<std::string> &args);

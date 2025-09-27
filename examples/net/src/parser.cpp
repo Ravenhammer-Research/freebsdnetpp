@@ -106,6 +106,12 @@ namespace net {
 
           if (args[1] == "interface" || args[1] == "interfaces") {
             return handleDeleteInterface(args);
+          } else if (args[1] == "bridge") {
+            return handleDeleteBridge(args);
+          } else if (args[1] == "lagg") {
+            return handleDeleteLagg(args);
+          } else if (args[1] == "system") {
+            return handleDeleteSystem(args);
           } else if (args[1] == "route") {
             return handleDeleteRoute(args);
           } else {
