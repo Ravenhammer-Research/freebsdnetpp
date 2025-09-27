@@ -11,6 +11,7 @@
 #include <cstring>
 #include <errno.h>
 #include <ifaddrs.h>
+#include <iostream>
 #include <interface/base.hpp>
 #include <interface/manager.hpp>
 #include <memory>
@@ -18,6 +19,17 @@
 #include <net/if_media.h>
 #include <net80211/ieee80211_ioctl.h>
 #include <netinet/in.h>
+#include <netinet/in_var.h>
+#include <netinet6/in6_var.h>
+// Define prf_ra struct locally to avoid header conflicts
+struct prf_ra {
+  u_char onlink : 1;
+  u_char autonomous : 1;
+  u_char ra_derived: 1;
+  u_char reserved : 5;
+};
+
+#include <netinet6/nd6.h>
 #include <string>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
@@ -147,6 +159,77 @@ namespace libfreebsdnet::interface {
     int currentFlags = pImpl ? pImpl->flags : 0;
     int newFlags = currentFlags & ~IFF_UP;
     return setFlags(newFlags);
+  }
+
+  bool Interface::setIpv6Option(Ipv6Option option, bool enable) {
+    int sock = socket(AF_INET6, SOCK_DGRAM, 0);
+    if (sock < 0) {
+      std::cerr << "Failed to create IPv6 socket: " << strerror(errno) << std::endl;
+      return false;
+    }
+
+    struct in6_ndireq nd;
+    std::memset(&nd, 0, sizeof(nd));
+    std::strncpy(nd.ifname, getName().c_str(), IFNAMSIZ - 1);
+
+    if (ioctl(sock, SIOCGIFINFO_IN6, &nd) < 0) {
+      std::cerr << "SIOCGIFINFO_IN6 failed for " << getName() << ": " << strerror(errno) << std::endl;
+      close(sock);
+      return false;
+    }
+
+    // Set the appropriate option flag
+    switch (option) {
+    case Ipv6Option::ACCEPT_RTADV:
+      if (enable) {
+        nd.ndi.flags |= ND6_IFF_ACCEPT_RTADV;
+      } else {
+        nd.ndi.flags &= ~ND6_IFF_ACCEPT_RTADV;
+      }
+      break;
+    case Ipv6Option::PERFORM_NUD:
+      if (enable) {
+        nd.ndi.flags |= ND6_IFF_PERFORMNUD;
+      } else {
+        nd.ndi.flags &= ~ND6_IFF_PERFORMNUD;
+      }
+      break;
+    case Ipv6Option::IFDISABLED:
+      if (enable) {
+        nd.ndi.flags |= ND6_IFF_IFDISABLED;
+      } else {
+        nd.ndi.flags &= ~ND6_IFF_IFDISABLED;
+      }
+      break;
+    case Ipv6Option::AUTO_LINKLOCAL:
+      if (enable) {
+        nd.ndi.flags |= ND6_IFF_AUTO_LINKLOCAL;
+      } else {
+        nd.ndi.flags &= ~ND6_IFF_AUTO_LINKLOCAL;
+      }
+      break;
+    case Ipv6Option::NO_RADR:
+      if (enable) {
+        nd.ndi.flags |= ND6_IFF_NO_RADR;
+      } else {
+        nd.ndi.flags &= ~ND6_IFF_NO_RADR;
+      }
+      break;
+    case Ipv6Option::NO_DAD:
+      if (enable) {
+        nd.ndi.flags |= ND6_IFF_NO_DAD;
+      } else {
+        nd.ndi.flags &= ~ND6_IFF_NO_DAD;
+      }
+      break;
+    }
+
+    bool result = (ioctl(sock, SIOCSIFINFO_IN6, &nd) == 0);
+    if (!result) {
+      std::cerr << "SIOCSIFINFO_IN6 failed for " << getName() << ": " << strerror(errno) << std::endl;
+    }
+    close(sock);
+    return result;
   }
 
   bool Interface::setMtu(int mtu) {

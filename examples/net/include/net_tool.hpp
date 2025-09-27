@@ -128,6 +128,9 @@ namespace net {
     bool handleQuit(const std::vector<std::string> &args);
     bool handleClear(const std::vector<std::string> &args);
 
+    // Save state functions
+    bool handleSaveState(const std::vector<std::string> &args);
+
     // Utility functions
     std::vector<std::string> splitCommand(const std::string &command);
     void printError(const std::string &message);

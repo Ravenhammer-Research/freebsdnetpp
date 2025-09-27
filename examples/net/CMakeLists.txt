@@ -22,6 +22,7 @@ set(NET_SOURCES
     src/interface_set_commands.cpp
     src/interface_delete_commands.cpp
     src/route_commands.cpp
+    src/save_state_commands.cpp
     src/help.cpp
     src/utils.cpp
     src/shell.cpp

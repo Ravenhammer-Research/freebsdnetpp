@@ -399,6 +399,46 @@ namespace net {
           printError("Failed to set MAC address: " + iface->getLastError());
           return false;
         }
+    } else if (property == "slaac") {
+      // Enable/disable IPv6 SLAAC - use ACCEPT_RTADV as the closest equivalent
+      bool enable = (value == "enable" || value == "1" || value == "true" || value == "yes");
+      if (iface->setIpv6Option(libfreebsdnet::interface::Ipv6Option::ACCEPT_RTADV, enable)) {
+        printSuccess(std::string("IPv6 SLAAC ") + (enable ? "enabled" : "disabled") + " for interface " + name);
+        return true;
+      } else {
+        printError(std::string("Failed to ") + (enable ? "enable" : "disable") + " IPv6 SLAAC for interface " + name + ": " + iface->getLastError());
+        return false;
+      }
+    } else if (property == "accept_rtadv") {
+      // Enable/disable IPv6 router advertisement acceptance
+      bool enable = (value == "enable" || value == "1" || value == "true" || value == "yes");
+      if (iface->setIpv6Option(libfreebsdnet::interface::Ipv6Option::ACCEPT_RTADV, enable)) {
+        printSuccess(std::string("IPv6 router advertisement acceptance ") + (enable ? "enabled" : "disabled") + " for interface " + name);
+        return true;
+      } else {
+        printError(std::string("Failed to ") + (enable ? "enable" : "disable") + " IPv6 router advertisement acceptance for interface " + name + ": " + iface->getLastError());
+        return false;
+      }
+    } else if (property == "perform_nud") {
+      // Enable/disable IPv6 neighbor unreachability detection
+      bool enable = (value == "enable" || value == "1" || value == "true" || value == "yes");
+      if (iface->setIpv6Option(libfreebsdnet::interface::Ipv6Option::PERFORM_NUD, enable)) {
+        printSuccess(std::string("IPv6 neighbor unreachability detection ") + (enable ? "enabled" : "disabled") + " for interface " + name);
+        return true;
+      } else {
+        printError(std::string("Failed to ") + (enable ? "enable" : "disable") + " IPv6 neighbor unreachability detection for interface " + name + ": " + iface->getLastError());
+        return false;
+      }
+    } else if (property == "auto_linklocal") {
+      // Enable/disable IPv6 automatic link-local address configuration
+      bool enable = (value == "enable" || value == "1" || value == "true" || value == "yes");
+      if (iface->setIpv6Option(libfreebsdnet::interface::Ipv6Option::AUTO_LINKLOCAL, enable)) {
+        printSuccess(std::string("IPv6 automatic link-local address configuration ") + (enable ? "enabled" : "disabled") + " for interface " + name);
+        return true;
+      } else {
+        printError(std::string("Failed to ") + (enable ? "enable" : "disable") + " IPv6 automatic link-local address configuration for interface " + name + ": " + iface->getLastError());
+        return false;
+      }
       } else {
         printError("Unknown property: " + property);
         return false;

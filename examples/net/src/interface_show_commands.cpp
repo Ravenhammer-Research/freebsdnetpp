@@ -267,9 +267,126 @@ namespace net {
           return false;
         }
       } else {
-        // Show comprehensive interface summary
-        // Get interface type from interface object
+        // Check if this is a LAGG interface and show LAGG-specific summary
         auto interfaceType = iface->getType();
+        if (interfaceType == libfreebsdnet::interface::InterfaceType::LAGG) {
+          // Show LAGG-specific interface summary
+          auto laggIface = dynamic_cast<libfreebsdnet::interface::LagInterface *>(iface.get());
+          
+          std::string status = iface->isUp() ? "UP" : "DOWN";
+          auto flags = iface->getFlags();
+          std::string flags_str = "";
+          for (const auto &flag : flags) {
+            switch (flag) {
+            case libfreebsdnet::interface::Flag::UP:
+              flags_str += "UP ";
+              break;
+            case libfreebsdnet::interface::Flag::RUNNING:
+              flags_str += "RUNNING ";
+              break;
+            case libfreebsdnet::interface::Flag::BROADCAST:
+              flags_str += "BROADCAST ";
+              break;
+            case libfreebsdnet::interface::Flag::MULTICAST:
+              flags_str += "MULTICAST ";
+              break;
+            case libfreebsdnet::interface::Flag::LOOPBACK:
+              flags_str += "LOOPBACK ";
+              break;
+            case libfreebsdnet::interface::Flag::POINTOPOINT:
+              flags_str += "POINTOPOINT ";
+              break;
+            default:
+              break;
+            }
+          }
+
+          printInfo("Interface: " + name);
+          printInfo("  Index:        " + std::to_string(iface->getIndex()));
+          printInfo("  Type:         LinkAggregate");
+          printInfo("  MTU:          " + std::to_string(iface->getMtu()));
+          printInfo("  Status:       " + status);
+          printInfo("  Flags:        " + (flags_str.empty() ? "None" : flags_str));
+          printInfo("  FIB:          " + std::to_string(iface->getFib()));
+          printInfo("  Media:        0x" + std::to_string(iface->getMedia()));
+          printInfo("  Capabilities: 0x" + std::to_string(iface->getCapabilities()));
+          printInfo("  MAC:          " + iface->getMacAddress());
+
+          auto groups = iface->getGroups();
+          if (!groups.empty()) {
+            std::string groupList;
+            for (size_t i = 0; i < groups.size(); i++) {
+              if (i > 0)
+                groupList += ", ";
+              groupList += groups[i];
+            }
+            printInfo("  Groups:        " + groupList);
+          } else {
+            printInfo("  Groups:        None");
+          }
+
+          auto addresses = iface->getAddresses();
+          if (!addresses.empty()) {
+            printInfo("  Addresses:");
+            for (const auto &addr : addresses) {
+              printInfo("    " + addr.getCidr());
+            }
+          } else {
+            printInfo("  Addresses:     None");
+          }
+
+          // Show LAGG-specific information
+          if (laggIface) {
+            printInfo("  LAGG Info:");
+            
+            // Get protocol
+            auto proto = laggIface->getProtocol();
+            std::string protocol = "Unknown";
+            switch (proto) {
+            case libfreebsdnet::interface::LagProtocol::FAILOVER:
+              protocol = "failover";
+              break;
+            case libfreebsdnet::interface::LagProtocol::FEC:
+              protocol = "fec";
+              break;
+            case libfreebsdnet::interface::LagProtocol::LACP:
+              protocol = "lacp";
+              break;
+            case libfreebsdnet::interface::LagProtocol::LOADBALANCE:
+              protocol = "loadbalance";
+              break;
+            case libfreebsdnet::interface::LagProtocol::ROUNDROBIN:
+              protocol = "roundrobin";
+              break;
+            default:
+              protocol = "unknown";
+              break;
+            }
+            printInfo("    Protocol:     " + protocol);
+            
+            // Get hash type
+            std::string hash = laggIface->getHashType();
+            printInfo("    Hash:         " + (hash.empty() ? "None" : hash));
+            
+            // Get ports
+            auto ports = laggIface->getPorts();
+            if (!ports.empty()) {
+              printInfo("    Ports:");
+              for (const auto &port : ports) {
+                printInfo("      " + port);
+              }
+            } else {
+              printInfo("    Ports:        None");
+            }
+          } else {
+            printInfo("  LAGG Info:     Not available");
+          }
+          
+          return true;
+        }
+
+        // Show comprehensive interface summary for non-LAGG interfaces
+        // Get interface type from interface object
         std::string type_str;
         switch (interfaceType) {
         case libfreebsdnet::interface::InterfaceType::ETHERNET:

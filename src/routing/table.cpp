@@ -515,8 +515,16 @@ namespace libfreebsdnet::routing {
         }
       }
 
+      // Get interface from rtm_index like netstat does
+      if (interface == "unknown" && rtm->rtm_index > 0) {
+        auto iface = interface_manager.getInterface(rtm->rtm_index);
+        if (iface) {
+          interface = iface->getName();
+        }
+      }
+
       // For IPv6 routes, try to get interface from scope_id if interface is
-      // unknown
+      // still unknown
       if (interface == "unknown" && scope_id > 0) {
         auto iface = interface_manager.getInterface(scope_id);
         if (iface) {
@@ -527,6 +535,16 @@ namespace libfreebsdnet::routing {
       // Handle netmask if not present in routing message
       if (netmask_display.empty()) {
         netmask_display = getNetmaskFromRoutingMessage(rtm);
+      }
+
+      // For IPv6 routes, set gateway to interface name (#N) where N is the interface index
+      if (gateway_display.empty() && std::string(dst_str).find(':') != std::string::npos && rtm->rtm_index > 0) {
+        auto iface = interface_manager.getInterface(rtm->rtm_index);
+        if (iface) {
+          gateway_display = iface->getName() + " (#" + std::to_string(rtm->rtm_index) + ")";
+        } else {
+          gateway_display = "if (#" + std::to_string(rtm->rtm_index) + ")";
+        }
       }
 
       // Create routing entry info structure

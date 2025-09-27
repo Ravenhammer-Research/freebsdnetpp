@@ -180,6 +180,22 @@ namespace net {
                            }
                          },
                          "flush route [fib <number>]"};
+
+    commands["save"] = {"save", "Save current network state",
+                        [this](const std::vector<std::string> &args) {
+                          if (args.size() < 2) {
+                            printError("Usage: save <state>");
+                            return false;
+                          }
+
+                          if (args[1] == "state") {
+                            return handleSaveState(args);
+                          } else {
+                            printError("Unknown save target: " + args[1]);
+                            return false;
+                          }
+                        },
+                        "save <state>"};
   }
 
 } // namespace net

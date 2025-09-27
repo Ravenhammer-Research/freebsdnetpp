@@ -43,6 +43,30 @@ namespace libfreebsdnet::routing {
 
     uint16_t getFlags() const { return info_.flags; }
 
+    std::vector<RouteFlag> getFlagList() const {
+      std::vector<RouteFlag> flags;
+      uint32_t raw_flags = info_.flags; // Use uint32_t to handle all flags
+      
+      if (raw_flags & RTF_UP) flags.push_back(RouteFlag::UP);
+      if (raw_flags & RTF_GATEWAY) flags.push_back(RouteFlag::GATEWAY);
+      if (raw_flags & RTF_HOST) flags.push_back(RouteFlag::HOST);
+      if (raw_flags & RTF_REJECT) flags.push_back(RouteFlag::REJECT);
+      if (raw_flags & RTF_DYNAMIC) flags.push_back(RouteFlag::DYNAMIC);
+      if (raw_flags & RTF_MODIFIED) flags.push_back(RouteFlag::MODIFIED);
+      if (raw_flags & RTF_DONE) flags.push_back(RouteFlag::DONE);
+      if (raw_flags & RTF_XRESOLVE) flags.push_back(RouteFlag::XRESOLVE);
+      if (raw_flags & RTF_LLINFO) flags.push_back(RouteFlag::LLINFO);
+      if (raw_flags & RTF_STATIC) flags.push_back(RouteFlag::STATIC);
+      if (raw_flags & RTF_BLACKHOLE) flags.push_back(RouteFlag::BLACKHOLE);
+      if (raw_flags & RTF_PROTO2) flags.push_back(RouteFlag::PROTO2);
+      if (raw_flags & RTF_PROTO1) flags.push_back(RouteFlag::PROTO1);
+      if (raw_flags & RTF_PROTO3) flags.push_back(RouteFlag::PROTO3);
+      if (raw_flags & RTF_FIXEDMTU) flags.push_back(RouteFlag::FIXEDMTU);
+      if (raw_flags & RTF_PINNED) flags.push_back(RouteFlag::PINNED);
+      
+      return flags;
+    }
+
     uint32_t getMetric() const { return info_.metric; }
 
     uint32_t getMtu() const { return info_.mtu; }
@@ -88,6 +112,10 @@ namespace libfreebsdnet::routing {
   }
 
   uint16_t RoutingEntry::getFlags() const { return pImpl->getFlags(); }
+
+  std::vector<RouteFlag> RoutingEntry::getFlagList() const {
+    return pImpl->getFlagList();
+  }
 
   uint32_t RoutingEntry::getMetric() const { return pImpl->getMetric(); }
 

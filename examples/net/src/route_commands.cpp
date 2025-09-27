@@ -29,6 +29,14 @@ namespace net {
         return true;
       }
 
+      // Print route flags legend
+      std::cout << "Route Flags Legend:" << std::endl;
+      std::cout << "  U = UP, G = GATEWAY, H = HOST, R = REJECT, D = DYNAMIC" << std::endl;
+      std::cout << "  M = MODIFIED, N = DONE, X = XRESOLVE, L = LLINFO, S = STATIC" << std::endl;
+      std::cout << "  B = BLACKHOLE, 2 = PROTO2, 1 = PROTO1, 3 = PROTO3" << std::endl;
+      std::cout << "  F = FIXEDMTU, P = PINNED" << std::endl;
+      std::cout << std::endl;
+
       std::vector<std::vector<std::string>> data;
       std::vector<std::string> headers = {
           "Destination", "Netmask", "Scope", "Gateway", "Flags", "Interface"};
@@ -75,11 +83,35 @@ namespace net {
           }
         }
 
+        // Convert flags to single-letter representation
+        std::string flags_str = "";
+        auto flags = entry->getFlagList();
+        for (const auto& flag : flags) {
+          switch (flag) {
+            case libfreebsdnet::routing::RouteFlag::UP: flags_str += "U"; break;
+            case libfreebsdnet::routing::RouteFlag::GATEWAY: flags_str += "G"; break;
+            case libfreebsdnet::routing::RouteFlag::HOST: flags_str += "H"; break;
+            case libfreebsdnet::routing::RouteFlag::REJECT: flags_str += "R"; break;
+            case libfreebsdnet::routing::RouteFlag::DYNAMIC: flags_str += "D"; break;
+            case libfreebsdnet::routing::RouteFlag::MODIFIED: flags_str += "M"; break;
+            case libfreebsdnet::routing::RouteFlag::DONE: flags_str += "N"; break;
+            case libfreebsdnet::routing::RouteFlag::XRESOLVE: flags_str += "X"; break;
+            case libfreebsdnet::routing::RouteFlag::LLINFO: flags_str += "L"; break;
+            case libfreebsdnet::routing::RouteFlag::STATIC: flags_str += "S"; break;
+            case libfreebsdnet::routing::RouteFlag::BLACKHOLE: flags_str += "B"; break;
+            case libfreebsdnet::routing::RouteFlag::PROTO2: flags_str += "2"; break;
+            case libfreebsdnet::routing::RouteFlag::PROTO1: flags_str += "1"; break;
+            case libfreebsdnet::routing::RouteFlag::PROTO3: flags_str += "3"; break;
+            case libfreebsdnet::routing::RouteFlag::FIXEDMTU: flags_str += "F"; break;
+            case libfreebsdnet::routing::RouteFlag::PINNED: flags_str += "P"; break;
+          }
+        }
+
         row.push_back(destination);
         row.push_back(entry->getNetmask());
         row.push_back(scope_interface);
         row.push_back(entry->getGateway());
-        row.push_back(std::to_string(entry->getFlags()));
+        row.push_back(flags_str);
         row.push_back(entry->getInterface());
         data.push_back(row);
       }

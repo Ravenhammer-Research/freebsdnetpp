@@ -20,6 +20,18 @@
 namespace libfreebsdnet::interface {
 
   /**
+   * @brief IPv6 option enumeration
+   */
+  enum class Ipv6Option {
+    ACCEPT_RTADV, // Accept router advertisements
+    PERFORM_NUD,  // Perform neighbor unreachability detection
+    IFDISABLED,   // Interface disabled
+    AUTO_LINKLOCAL, // Automatically configure link-local address
+    NO_RADR,      // No router advertisement
+    NO_DAD        // No duplicate address detection
+  };
+
+  /**
    * @brief Interface type enumeration
    */
   enum class InterfaceType {
@@ -177,6 +189,14 @@ namespace libfreebsdnet::interface {
      * @return true on success, false on error
      */
     virtual bool bringDown();
+
+    /**
+     * @brief Set IPv6 option
+     * @param option IPv6 option to set
+     * @param enable true to enable, false to disable
+     * @return true on success, false on error
+     */
+    virtual bool setIpv6Option(Ipv6Option option, bool enable);
 
     /**
      * @brief Check if interface is up

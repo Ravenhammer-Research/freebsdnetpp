@@ -13,8 +13,32 @@
 #include <chrono>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace libfreebsdnet::routing {
+
+  /**
+   * @brief Route flags enumeration
+   * @details Individual route flags that can be combined
+   */
+  enum class RouteFlag {
+    UP = 0x1,           // RTF_UP - Route is up
+    GATEWAY = 0x2,      // RTF_GATEWAY - Route has a gateway
+    HOST = 0x4,         // RTF_HOST - Host route
+    REJECT = 0x8,       // RTF_REJECT - Route is rejected
+    DYNAMIC = 0x10,     // RTF_DYNAMIC - Route was created dynamically
+    MODIFIED = 0x20,    // RTF_MODIFIED - Route was modified dynamically
+    DONE = 0x40,        // RTF_DONE - Message confirmed
+    XRESOLVE = 0x200,   // RTF_XRESOLVE - External daemon resolves name
+    LLINFO = 0x400,     // RTF_LLINFO - Valid protocol to link layer translation
+    STATIC = 0x800,     // RTF_STATIC - Manually added route
+    BLACKHOLE = 0x1000, // RTF_BLACKHOLE - Just discard packets
+    PROTO2 = 0x4000,    // RTF_PROTO2 - Protocol specific routing flag
+    PROTO1 = 0x8000,    // RTF_PROTO1 - Protocol specific routing flag
+    PROTO3 = 0x40000,   // RTF_PROTO3 - Protocol specific routing flag
+    FIXEDMTU = 0x80000, // RTF_FIXEDMTU - MTU was explicitly specified
+    PINNED = 0x100000   // RTF_PINNED - Route is immutable
+  };
 
   /**
    * @brief Routing entry information
@@ -65,9 +89,15 @@ namespace libfreebsdnet::routing {
 
     /**
      * @brief Get route flags
-     * @return Route flags
+     * @return Route flags as raw value
      */
     uint16_t getFlags() const;
+
+    /**
+     * @brief Get route flags as enumeration list
+     * @return Vector of individual route flags
+     */
+    std::vector<RouteFlag> getFlagList() const;
 
     /**
      * @brief Get route metric
