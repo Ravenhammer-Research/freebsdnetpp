@@ -34,17 +34,10 @@ include_directories(${GLOBAL_PROJ_INCLUDE_DIR})
 
 # Include subdirectories
 add_subdirectory(src/interface)
-add_subdirectory(src/bpf)
 add_subdirectory(src/routing)
-add_subdirectory(src/altq)
-add_subdirectory(src/ethernet)
-add_subdirectory(src/netmap)
-add_subdirectory(src/bridge)
-add_subdirectory(src/vlan)
-add_subdirectory(src/tunnel)
-add_subdirectory(src/media)
-add_subdirectory(src/netlink)
 add_subdirectory(src/types)
+add_subdirectory(src/ethernet)
+add_subdirectory(src/netlink)
 add_subdirectory(src/system)
 
 # The subdirectories already create the individual libraries
@@ -53,17 +46,10 @@ add_subdirectory(src/system)
 add_library(libfreebsdnet++ INTERFACE)
 target_link_libraries(libfreebsdnet++ INTERFACE
     libfreebsdnet++_interface
-    libfreebsdnet++_bpf
     libfreebsdnet++_routing
-    libfreebsdnet++_altq
-    libfreebsdnet++_ethernet
-    libfreebsdnet++_netmap
-    libfreebsdnet++_bridge
-    libfreebsdnet++_vlan
-    libfreebsdnet++_tunnel
-    libfreebsdnet++_media
-    libfreebsdnet++_netlink
     libfreebsdnet++_types
+    libfreebsdnet++_ethernet
+    libfreebsdnet++_netlink
     libfreebsdnet++_system
 )
 
